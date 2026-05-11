@@ -4,58 +4,60 @@
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
+    /* ── "The New Wealth" Palette ─────────────────────────────── */
+    --background: 0 33% 99%;          /* #FCFAFA cream */
+    --foreground: 224 22% 10%;
     --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
+    --card-foreground: 224 22% 10%;
     --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
-    --primary: 262.1 83.3% 57.8%;
-    --primary-foreground: 210 40% 98%;
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 262.1 83.3% 57.8%;
-    --radius: 0.75rem;
-    --chart-1: 262.1 83.3% 57.8%;
-    --chart-2: 199.4 86.2% 44.1%;
-    --chart-3: 142.1 76.2% 36.3%;
-    --chart-4: 43.3 96.4% 56.3%;
-    --chart-5: 0 84.2% 60.2%;
+    --popover-foreground: 224 22% 10%;
+    --primary: 271 72% 68%;           /* Electric Lavender */
+    --primary-foreground: 0 0% 100%;
+    --secondary: 297 38% 90%;         /* Soft Orchid tint */
+    --secondary-foreground: 271 28% 28%;
+    --muted: 210 22% 96%;
+    --muted-foreground: 215 14% 52%;
+    --accent: 22 90% 88%;             /* Peach */
+    --accent-foreground: 20 40% 26%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 220 18% 91%;
+    --input: 220 18% 91%;
+    --ring: 271 72% 68%;
+    --radius: 1rem;
+    /* Charts */
+    --chart-1: 271 72% 68%;
+    --chart-2: 148 52% 46%;
+    --chart-3: 297 45% 68%;
+    --chart-4: 22 90% 72%;
+    --chart-5: 0 84% 60%;
   }
 
   .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
-    --primary: 263.4 70% 50.4%;
-    --primary-foreground: 210 40% 98%;
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 263.4 70% 50.4%;
-    --chart-1: 263.4 70% 50.4%;
-    --chart-2: 199.4 86.2% 44.1%;
-    --chart-3: 142.1 76.2% 36.3%;
-    --chart-4: 43.3 96.4% 56.3%;
-    --chart-5: 0 84.2% 60.2%;
+    --background: 222 20% 6%;         /* Midnight Navy */
+    --foreground: 210 38% 95%;
+    --card: 222 20% 9%;
+    --card-foreground: 210 38% 95%;
+    --popover: 222 20% 9%;
+    --popover-foreground: 210 38% 95%;
+    --primary: 271 80% 74%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 217 28% 18%;
+    --secondary-foreground: 210 38% 95%;
+    --muted: 217 28% 16%;
+    --muted-foreground: 215 18% 60%;
+    --accent: 162 78% 58%;            /* Neon Mint in dark */
+    --accent-foreground: 162 40% 10%;
+    --destructive: 0 62% 30%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 217 28% 18%;
+    --input: 217 28% 18%;
+    --ring: 271 80% 74%;
+    --chart-1: 271 80% 74%;
+    --chart-2: 162 78% 58%;
+    --chart-3: 297 50% 72%;
+    --chart-4: 22 90% 76%;
+    --chart-5: 0 84% 60%;
   }
 }
 
@@ -65,5 +67,80 @@
   }
   body {
     @apply bg-background text-foreground;
+    font-family: var(--font-jakarta), system-ui, sans-serif;
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+  h1, h2, h3, h4 {
+    font-family: var(--font-syne), system-ui, sans-serif;
+    letter-spacing: -0.025em;
+  }
+  /* Currency & numbers use JetBrains Mono */
+  .font-mono, [class*="tabular-nums"] {
+    font-family: var(--font-mono), ui-monospace, monospace;
+  }
+}
+
+@layer utilities {
+  /* Glassmorphism */
+  .glass {
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    background-color: rgba(255, 255, 255, 0.72);
+    border: 1px solid rgba(255, 255, 255, 0.55);
+  }
+  .glass-dark {
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    background-color: rgba(11, 14, 20, 0.75);
+    border: 1px solid rgba(255, 255, 255, 0.09);
+  }
+  /* Soft squircle shadows */
+  .card-soft {
+    box-shadow:
+      0 2px 4px rgba(0, 0, 0, 0.04),
+      0 8px 32px -8px rgba(0, 0, 0, 0.06);
+  }
+  .card-glow {
+    box-shadow:
+      0 2px 4px rgba(0, 0, 0, 0.04),
+      0 12px 40px -10px rgba(183, 146, 240, 0.25);
+  }
+  .card-glow-green {
+    box-shadow:
+      0 2px 4px rgba(0, 0, 0, 0.04),
+      0 12px 40px -10px rgba(46, 196, 113, 0.25);
+  }
+  /* Brand gradients */
+  .gradient-brand {
+    background: linear-gradient(135deg, #B792F0 0%, #D98BCC 55%, #FFB899 100%);
+  }
+  .gradient-brand-text {
+    background: linear-gradient(135deg, #B792F0 0%, #D98BCC 55%, #FFB899 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  .gradient-lavender {
+    background: linear-gradient(135deg, #c4a8f5 0%, #b792f0 100%);
+  }
+  .gradient-orchid {
+    background: linear-gradient(135deg, #e0a5d8 0%, #d98bcc 100%);
+  }
+  .gradient-peach {
+    background: linear-gradient(135deg, #ffcfb3 0%, #ffb899 100%);
+  }
+  .gradient-fidelity {
+    background: linear-gradient(135deg, #2ecc71 0%, #27ae60 100%);
+  }
+  /* Monospace numbers */
+  .text-currency {
+    font-family: var(--font-mono), ui-monospace, monospace;
+    font-feature-settings: "tnum";
+    letter-spacing: -0.02em;
+  }
+  /* Heading font override */
+  .font-heading {
+    font-family: var(--font-syne), system-ui, sans-serif;
+    letter-spacing: -0.025em;
   }
 }

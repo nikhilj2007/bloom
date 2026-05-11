@@ -24,22 +24,22 @@ function ConfidenceMeter({ score }: { score: number }) {
   const pct = (score / 10) * 100;
   const color =
     score >= 8
-      ? "from-emerald-500 to-green-400"
+      ? "from-emerald-400 to-[#2ECC71]"
       : score >= 5
-      ? "from-violet-500 to-indigo-400"
-      : "from-rose-500 to-orange-400";
+      ? "from-[#B792F0] to-[#D98BCC]"
+      : "from-[#FFB899] to-rose-400";
   const label =
     score >= 8 ? "Strong 💪" : score >= 5 ? "Building 🌱" : "Keep Going 🔥";
 
   return (
     <div className="space-y-2">
       <div className="flex items-center justify-between">
-        <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+        <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
           Confidence Score
         </span>
-        <span className="text-xs font-medium text-muted-foreground">{label}</span>
+        <span className="text-[10px] font-semibold text-muted-foreground">{label}</span>
       </div>
-      <div className="relative h-3 w-full rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden">
+      <div className="relative h-3 w-full rounded-full bg-[#F0EAF8] overflow-hidden">
         <div
           className={`h-full rounded-full bg-gradient-to-r ${color} transition-all duration-700 ease-out`}
           style={{ width: `${pct}%` }}
@@ -47,7 +47,7 @@ function ConfidenceMeter({ score }: { score: number }) {
       </div>
       <div className="flex justify-between text-[10px] text-muted-foreground">
         <span>1</span>
-        <span className="font-bold text-sm text-foreground">{score}/10</span>
+        <span className="text-currency font-bold text-sm text-foreground">{score}/10</span>
         <span>10</span>
       </div>
     </div>
@@ -59,16 +59,16 @@ function ConfidenceMeter({ score }: { score: number }) {
 function ChatBubble({ msg }: { msg: ChatMessage }) {
   const isUser = msg.role === "user";
   const isError = msg.content.startsWith("Error:");
-  
+
   return (
     <div className={`flex gap-2.5 ${isUser ? "flex-row-reverse" : "flex-row"}`}>
       <div
-        className={`shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold ${
+        className={`shrink-0 w-8 h-8 rounded-xl flex items-center justify-center text-white text-xs font-bold shadow-sm ${
           isUser
-            ? "bg-gradient-to-br from-violet-500 to-indigo-500"
+            ? "gradient-brand"
             : isError
-            ? "bg-gradient-to-br from-rose-500 to-rose-700"
-            : "bg-gradient-to-br from-slate-600 to-slate-700"
+            ? "bg-gradient-to-br from-rose-400 to-rose-600"
+            : "bg-gradient-to-br from-[#6b7280] to-[#4b5563]"
         }`}
       >
         {isUser ? <User className="w-4 h-4" /> : <Bot className="w-4 h-4" />}
@@ -77,10 +77,10 @@ function ChatBubble({ msg }: { msg: ChatMessage }) {
         <div
           className={`rounded-2xl px-4 py-2.5 text-sm leading-relaxed ${
             isUser
-              ? "bg-gradient-to-br from-violet-600 to-indigo-600 text-white rounded-tr-sm"
+              ? "gradient-brand text-white rounded-tr-sm shadow-md shadow-[#B792F0]/20"
               : isError
-              ? "bg-rose-50 border border-rose-200 text-rose-700 rounded-tl-sm shadow-sm"
-              : "bg-white dark:bg-slate-800 border text-foreground rounded-tl-sm shadow-sm"
+              ? "bg-rose-50 border border-rose-200 text-rose-700 rounded-tl-sm"
+              : "bg-white border border-[#E8E0F5] text-foreground rounded-tl-sm card-soft"
           }`}
         >
           {msg.content}
@@ -99,7 +99,7 @@ function FeedbackPanel({ tips }: { tips: string[] }) {
   if (!tips?.length) return null;
   return (
     <div className="space-y-2">
-      <div className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-amber-600 dark:text-amber-400">
+      <div className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-[#9b6de0]">
         <Lightbulb className="w-3.5 h-3.5" />
         Coach Tips
       </div>
@@ -107,9 +107,9 @@ function FeedbackPanel({ tips }: { tips: string[] }) {
         {tips.map((tip, i) => (
           <li
             key={i}
-            className="flex gap-2 text-xs text-foreground leading-relaxed bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800/40 rounded-lg px-3 py-2"
+            className="flex gap-2 text-xs text-foreground leading-relaxed bg-[#F3EDFF] border border-[#D4B8F8] rounded-xl px-3 py-2.5"
           >
-            <span className="text-amber-500 font-bold shrink-0">{i + 1}.</span>
+            <span className="gradient-brand-text font-bold shrink-0">{i + 1}.</span>
             {tip}
           </li>
         ))}
@@ -150,7 +150,6 @@ function NegotiateApp() {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  // Build Gemini-compatible history from existing messages (exclude intro)
   const buildHistory = useCallback(() => {
     return messages
       .filter((m) => m.id !== "intro" && !m.content.startsWith("Error:"))
@@ -184,10 +183,9 @@ function NegotiateApp() {
           }),
         });
 
-        // If the server returns a 500, throw the text to the catch block
         if (!res.ok) {
-           const errorText = await res.text();
-           throw new Error(errorText || `Server responded with status ${res.status}`);
+          const errorText = await res.text();
+          throw new Error(errorText || `Server responded with status ${res.status}`);
         }
 
         const data: GeminiNegotiationResponse & { error?: string } = await res.json();
@@ -202,17 +200,14 @@ function NegotiateApp() {
           feedback: data.feedback || [],
           timestamp: new Date(),
         };
-        
+
         setMessages((prev) => [...prev, assistantMsg]);
         setConfidenceScore(data.confidence_score || 0);
         setFeedbackTips(data.feedback || []);
         setSessionScore((prev) => [...prev, data.confidence_score || 0]);
-        
       } catch (err: any) {
         console.error("Chat Error:", err);
-        // This is the fix! Now we extract the REAL error message instead of the hardcoded key error.
         const actualErrorMessage = err instanceof Error ? err.message : String(err);
-        
         const errMsg: ChatMessage = {
           id: crypto.randomUUID(),
           role: "assistant",
@@ -252,41 +247,46 @@ function NegotiateApp() {
   return (
     <div className="min-h-[calc(100vh-4rem)] grid grid-cols-1 lg:grid-cols-3 max-w-6xl mx-auto px-4 sm:px-6 py-6 gap-6">
       {/* ── Chat column ──────────────────────────────────────────────── */}
-      <div className="lg:col-span-2 flex flex-col bg-white dark:bg-slate-900 rounded-2xl border shadow-sm overflow-hidden">
+      <div className="lg:col-span-2 flex flex-col rounded-2xl border border-[#E8E0F5] overflow-hidden card-soft bg-white">
         {/* Chat header */}
-        <div className="flex items-center justify-between px-5 py-4 border-b bg-slate-50 dark:bg-slate-800/60">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-[#E8E0F5] bg-gradient-to-r from-[#F3EDFF] to-[#FFF0E8]">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-full bg-gradient-to-br from-slate-600 to-slate-700 flex items-center justify-center text-white">
+            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#6b7280] to-[#4b5563] flex items-center justify-center text-white shadow-sm">
               <Bot className="w-4 h-4" />
             </div>
             <div>
-              <p className="text-sm font-semibold">Jordan — Hiring Manager</p>
+              <p className="font-heading font-semibold text-sm">Jordan — Hiring Manager</p>
               <div className="flex items-center gap-1.5">
                 <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                <p className="text-[10px] text-muted-foreground">Powered by Gemini</p>
+                <p className="text-[10px] text-muted-foreground">Powered by Gemini 2.5</p>
               </div>
             </div>
           </div>
-          <Button variant="ghost" size="sm" onClick={resetSession} className="gap-1.5 text-xs">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={resetSession}
+            className="gap-1.5 text-xs text-[#9b6de0] hover:bg-[#F3EDFF] hover:text-[#7b4fd0]"
+          >
             <RefreshCw className="w-3.5 h-3.5" /> New Session
           </Button>
         </div>
 
         {/* Messages */}
-        <div className="flex-1 overflow-y-auto p-5 space-y-4 bg-gradient-to-b from-slate-50/50 dark:from-slate-900/50 to-white dark:to-slate-900">
+        <div className="flex-1 overflow-y-auto p-5 space-y-4 bg-gradient-to-b from-[#FDFAFF] to-white">
           {messages.map((msg) => (
             <ChatBubble key={msg.id} msg={msg} />
           ))}
           {loading && (
             <div className="flex gap-2.5">
-              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-slate-600 to-slate-700 flex items-center justify-center text-white shrink-0">
+              <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-[#6b7280] to-[#4b5563] flex items-center justify-center text-white shrink-0">
                 <Bot className="w-4 h-4" />
               </div>
-              <div className="bg-white dark:bg-slate-800 border rounded-2xl rounded-tl-sm px-4 py-3 shadow-sm">
+              <div className="bg-white border border-[#E8E0F5] rounded-2xl rounded-tl-sm px-4 py-3 card-soft">
                 <div className="flex gap-1 items-center h-4">
-                  <div className="w-1.5 h-1.5 rounded-full bg-slate-400 animate-bounce [animation-delay:0ms]" />
-                  <div className="w-1.5 h-1.5 rounded-full bg-slate-400 animate-bounce [animation-delay:150ms]" />
-                  <div className="w-1.5 h-1.5 rounded-full bg-slate-400 animate-bounce [animation-delay:300ms]" />
+                  <div className="w-1.5 h-1.5 rounded-full bg-[#B792F0] animate-bounce [animation-delay:0ms]" />
+                  <div className="w-1.5 h-1.5 rounded-full bg-[#D98BCC] animate-bounce [animation-delay:150ms]" />
+                  <div className="w-1.5 h-1.5 rounded-full bg-[#FFB899] animate-bounce [animation-delay:300ms]" />
                 </div>
               </div>
             </div>
@@ -294,14 +294,14 @@ function NegotiateApp() {
           <div ref={bottomRef} />
         </div>
 
-        {/* Starter prompts — show before first user message */}
+        {/* Starter prompts */}
         {messages.filter((m) => m.role === "user").length === 0 && (
           <div className="px-5 pb-3 flex flex-wrap gap-2">
             {STARTER_PROMPTS.map((p) => (
               <button
                 key={p}
                 onClick={() => sendMessage(p)}
-                className="text-xs px-3 py-1.5 rounded-full border border-violet-200 bg-violet-50 dark:bg-violet-950/30 dark:border-violet-700 text-violet-700 dark:text-violet-300 hover:bg-violet-100 dark:hover:bg-violet-900/40 transition-colors"
+                className="text-xs px-3 py-1.5 rounded-full border border-[#D4B8F8] bg-[#F3EDFF] text-[#9b6de0] hover:bg-[#EDE0FF] transition-colors"
               >
                 {p.length > 52 ? p.slice(0, 52) + "…" : p}
               </button>
@@ -310,12 +310,12 @@ function NegotiateApp() {
         )}
 
         {/* Input bar */}
-        <div className="border-t p-4 bg-white dark:bg-slate-900">
+        <div className="border-t border-[#E8E0F5] p-4 bg-white">
           <div className="flex gap-2 items-end">
             <textarea
               ref={inputRef}
               rows={2}
-              className="flex-1 resize-none rounded-xl border border-input bg-transparent px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:opacity-50"
+              className="flex-1 resize-none rounded-xl border border-[#E8E0F5] bg-[#FDFAFF] px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#B792F0]/50 focus-visible:border-[#B792F0] disabled:opacity-50 transition-colors"
               placeholder="Type your negotiation message…"
               value={input}
               onChange={(e) => setInput(e.target.value)}
@@ -331,25 +331,25 @@ function NegotiateApp() {
               onClick={() => sendMessage(input)}
               disabled={loading || !input.trim()}
               size="icon"
-              className="h-10 w-10 shrink-0 bg-gradient-to-br from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700"
+              className="h-10 w-10 shrink-0 gradient-brand border-0 text-white shadow-md hover:opacity-90 transition-opacity"
             >
               <Send className="w-4 h-4" />
             </Button>
           </div>
           <p className="text-[10px] text-muted-foreground mt-1.5 px-1">
-            Press Enter to send · Shift+Enter for new line
+            Enter to send · Shift+Enter for new line
           </p>
         </div>
       </div>
 
       {/* ── Side panel ───────────────────────────────────────────────── */}
       <div className="space-y-5">
-        {/* Confidence meter */}
-        <div className="rounded-2xl border bg-white dark:bg-slate-900 p-5 shadow-sm space-y-4">
+        {/* Confidence meter card */}
+        <div className="rounded-2xl border border-[#E8E0F5] bg-white p-5 card-soft space-y-4">
           <div className="flex items-center justify-between">
-            <h3 className="text-sm font-semibold">Negotiation Score</h3>
+            <h3 className="font-heading font-semibold text-sm">Negotiation Score</h3>
             {sessionScore.length > 0 && (
-              <Badge variant="outline" className="text-xs">
+              <Badge className="bg-[#F3EDFF] text-[#9b6de0] border-[#D4B8F8] border text-[10px] font-semibold">
                 Avg: {avgScore}/10
               </Badge>
             )}
@@ -358,25 +358,25 @@ function NegotiateApp() {
           {confidenceScore > 0 ? (
             <ConfidenceMeter score={confidenceScore} />
           ) : (
-            <div className="text-center py-6 text-muted-foreground text-sm space-y-1">
-              <div className="w-12 h-12 rounded-full bg-muted/50 flex items-center justify-center mx-auto mb-2">
-                <Sparkles className="w-5 h-5 text-muted-foreground/60" />
+            <div className="text-center py-6 text-muted-foreground text-sm space-y-2">
+              <div className="w-12 h-12 rounded-2xl bg-[#F3EDFF] flex items-center justify-center mx-auto">
+                <Sparkles className="w-5 h-5 text-[#B792F0]" />
               </div>
-              <p>Send your first message to see your score</p>
+              <p className="text-xs">Send your first message to see your score</p>
             </div>
           )}
 
-          <Separator />
+          <Separator className="bg-[#F0EAF8]" />
           <FeedbackPanel tips={feedbackTips} />
         </div>
 
-        {/* Tips card */}
-        <div className="rounded-2xl border bg-gradient-to-br from-violet-50 to-indigo-50 dark:from-violet-950/20 dark:to-indigo-950/20 p-5 space-y-3">
-          <div className="flex items-center gap-2 text-violet-600 dark:text-violet-400 font-semibold text-sm">
+        {/* Negotiation Playbook */}
+        <div className="rounded-2xl border border-[#D4B8F8] bg-gradient-to-br from-[#F3EDFF] to-[#FFF0E8] p-5 space-y-3">
+          <div className="flex items-center gap-2 font-heading font-semibold text-sm text-[#9b6de0]">
             <Lightbulb className="w-4 h-4" />
             Negotiation Playbook
           </div>
-          <ul className="space-y-2 text-xs text-muted-foreground">
+          <ul className="space-y-2">
             {[
               "Always anchor with a number first — let them react.",
               "Use market data: \"Glassdoor shows $X for this role.\"",
@@ -384,28 +384,28 @@ function NegotiateApp() {
               "Be silent after making your ask — don't fill the pause.",
               "Express enthusiasm for the role before pushing on pay.",
             ].map((tip) => (
-              <li key={tip} className="flex gap-2">
-                <span className="text-violet-400 shrink-0">›</span>
+              <li key={tip} className="flex gap-2 text-xs text-muted-foreground">
+                <span className="gradient-brand-text font-bold shrink-0">›</span>
                 {tip}
               </li>
             ))}
           </ul>
         </div>
 
-        {/* Session history summary */}
+        {/* Session history */}
         {sessionScore.length > 0 && (
-          <div className="rounded-2xl border bg-white dark:bg-slate-900 p-5 shadow-sm space-y-3">
-            <h3 className="text-sm font-semibold">Session Progress</h3>
+          <div className="rounded-2xl border border-[#E8E0F5] bg-white p-5 card-soft space-y-3">
+            <h3 className="font-heading font-semibold text-sm">Session Progress</h3>
             <div className="flex gap-1.5 flex-wrap">
               {sessionScore.map((s, i) => (
                 <div
                   key={i}
-                  className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white ${
+                  className={`w-8 h-8 rounded-xl flex items-center justify-center text-xs font-bold text-currency text-white shadow-sm ${
                     s >= 8
-                      ? "bg-emerald-500"
+                      ? "bg-gradient-to-br from-emerald-400 to-[#2ECC71]"
                       : s >= 5
-                      ? "bg-violet-500"
-                      : "bg-rose-500"
+                      ? "gradient-brand"
+                      : "bg-gradient-to-br from-[#FFB899] to-rose-400"
                   }`}
                 >
                   {s}
@@ -428,37 +428,50 @@ export default function NegotiatePage() {
   const { isSignedIn, isLoaded } = useAuth();
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-violet-50/20 to-indigo-50/30 dark:from-slate-950 dark:via-violet-950/10 dark:to-indigo-950/10">
+    <div className="min-h-screen bg-[#FCFAFA] relative">
+      {/* Ambient blobs */}
+      <div className="fixed -top-40 -right-40 w-[500px] h-[500px] rounded-full bg-[#B792F0]/08 blur-[100px] pointer-events-none" />
+      <div className="fixed bottom-0 -left-20 w-[400px] h-[400px] rounded-full bg-[#FFB899]/10 blur-[80px] pointer-events-none" />
+
       {/* Header */}
-      <header className="border-b bg-white/70 dark:bg-slate-900/70 backdrop-blur-sm sticky top-0 z-10">
+      <header className="border-b border-[#E8E0F5] bg-white/80 backdrop-blur-xl sticky top-0 z-40">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center gap-4">
           <Link href="/">
-            <Button variant="ghost" size="sm" className="gap-1.5 text-muted-foreground">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="gap-1.5 text-muted-foreground hover:text-[#9b6de0] hover:bg-[#F3EDFF]"
+            >
               <ArrowLeft className="w-3.5 h-3.5" /> Dashboard
             </Button>
           </Link>
-          <Separator orientation="vertical" className="h-5" />
-          <div className="flex items-center gap-2">
-            <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-violet-600 to-indigo-600 flex items-center justify-center">
-              <Bot className="w-3.5 h-3.5 text-white" />
+          <Separator orientation="vertical" className="h-5 bg-[#E8E0F5]" />
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-xl gradient-brand flex items-center justify-center shadow-md">
+              <Bot className="w-4 h-4 text-white" />
             </div>
-            <span className="font-bold tracking-tight">&ldquo;Worth It&rdquo; AI Coach</span>
+            <span className="font-heading font-bold tracking-tight">&ldquo;Worth It&rdquo; AI Coach</span>
           </div>
-          <Badge variant="outline" className="ml-auto text-xs text-violet-600 border-violet-300 bg-violet-50 dark:bg-violet-950/30">
-            Gemini
+          <Badge className="ml-auto text-[10px] font-semibold text-[#9b6de0] border-[#D4B8F8] bg-[#F3EDFF] border">
+            Gemini 2.5
           </Badge>
         </div>
       </header>
 
       {isLoaded && !isSignedIn && (
-        <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-4 text-center px-4">
-          <Lock className="w-10 h-10 text-muted-foreground/50" />
-          <h2 className="text-xl font-semibold">Sign in to practice</h2>
-          <p className="text-muted-foreground max-w-sm text-sm">
-            Create a free account to start your negotiation session and track your confidence scores over time.
-          </p>
+        <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-5 text-center px-4">
+          <div className="w-16 h-16 rounded-2xl gradient-brand flex items-center justify-center shadow-xl shadow-[#B792F0]/30 mx-auto">
+            <Lock className="w-7 h-7 text-white" />
+          </div>
+          <div className="space-y-2">
+            <h2 className="font-heading text-2xl font-bold">Sign in to practice</h2>
+            <p className="text-muted-foreground max-w-sm text-sm leading-relaxed">
+              Create a free account to start your negotiation session and track
+              your confidence scores over time.
+            </p>
+          </div>
           <SignInButton mode="modal">
-            <Button className="gap-2 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white">
+            <Button className="gap-2 gradient-brand border-0 text-white shadow-lg shadow-[#B792F0]/30 hover:opacity-90 transition-opacity">
               <Lock className="w-3.5 h-3.5" /> Sign In to Continue
             </Button>
           </SignInButton>
