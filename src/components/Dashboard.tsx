@@ -23,6 +23,7 @@ import {
   ChevronRight,
   BarChart2,
 } from "lucide-react";
+import { MarketPulseTicker } from "@/components/MarketPulseTicker";
 import { calculateNetWorth, calculateGlowScore } from "@/lib/utils";
 import type { CategorySummary } from "@/types";
 import { useProfile } from "@/context/ProfileContext";
@@ -68,15 +69,15 @@ function NetWorthTrendChart({ netWorth }: { netWorth: number }) {
   }, [netWorth]);
 
   return (
-    <div className="bg-white rounded-2xl border border-[#D0E8D0] card-soft p-5 space-y-3 h-full flex flex-col">
-      <div className="flex items-center justify-between">
+    <div className="bg-white rounded-2xl border border-[#D0E8D0] card-soft p-5 h-full flex flex-col">
+      <div className="flex items-center justify-between mb-3">
         <p className="font-heading font-semibold text-sm">Net Worth Trend</p>
         <Badge className="bg-[#f0f7f0] text-[#2d6a2d] border-[#A8D4A8] border text-[10px] font-medium">
           6-month
         </Badge>
       </div>
-      <div className="flex-1 min-h-[100px]">
-        <ResponsiveContainer width="100%" height={110}>
+      <div className="flex-1" style={{ minHeight: 0 }}>
+        <ResponsiveContainer width="100%" height="100%">
           <AreaChart data={trendData} margin={{ top: 4, right: 4, left: -28, bottom: 0 }}>
             <defs>
               <linearGradient id="trendGrad" x1="0" y1="0" x2="0" y2="1">
@@ -226,8 +227,12 @@ export function Dashboard() {
 
         {/* ── Hero Slogan ──────────────────────────────────────────── */}
         <section className="text-center py-4">
-          <h1 className="font-heading text-4xl sm:text-5xl font-extrabold tracking-tight">
-            Know your <span style={{ color: "#3E863E" }}>worth</span>.
+          <h1
+            className="text-4xl sm:text-5xl font-extrabold tracking-tight leading-tight"
+            style={{ fontFamily: "var(--font-jakarta), system-ui, sans-serif", color: "#1a2332" }}
+          >
+            Know your{" "}
+            <span style={{ color: "#3E863E", fontWeight: 800 }}>worth</span>.
           </h1>
           <p className="text-muted-foreground text-sm mt-2">
             Your financial picture — live, compounding, and growing.
@@ -297,6 +302,7 @@ export function Dashboard() {
                 </div>
               </div>
             </Link>
+            <MarketPulseTicker />
             <FutureCastChart netWorth={breakdown.total} isConnected={isConnected} compact />
           </div>
         </section>

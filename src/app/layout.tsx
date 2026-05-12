@@ -41,6 +41,7 @@ export default function RootLayout({
     <ClerkProvider>
       <html lang="en" suppressHydrationWarning>
         <body
+          suppressHydrationWarning
           className={`${syne.variable} ${jakarta.variable} ${jetbrainsMono.variable} antialiased`}
         >
           <ProfileProvider>
