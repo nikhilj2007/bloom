@@ -8,8 +8,16 @@ export default async function Home() {
   const { userId } = await auth();
 
   if (!userId) {
-    return <LandingPage />;
+    return (
+      <div suppressHydrationWarning>
+        <LandingPage />
+      </div>
+    );
   }
 
-  return <Dashboard />;
+  return (
+    <div suppressHydrationWarning>
+      <Dashboard />
+    </div>
+  );
 }

@@ -18,10 +18,50 @@ import {
   Wallet,
   TrendingDown,
   Link2,
+  Mic,
+  MicOff,
+  Volume2,
+  VolumeX,
 } from "lucide-react";
 import type { ChatMessage, GeminiNegotiationResponse } from "@/types";
 import { useProfile } from "@/context/ProfileContext";
 import { usePlaid } from "@/context/PlaidContext";
+
+// ─── Web Speech API type shim ─────────────────────────────────────────────────
+
+interface SpeechRecognitionAlternative {
+  transcript: string;
+  confidence: number;
+}
+interface SpeechRecognitionResult {
+  readonly length: number;
+  [index: number]: SpeechRecognitionAlternative;
+}
+interface SpeechRecognitionResultList {
+  readonly length: number;
+  [index: number]: SpeechRecognitionResult;
+}
+interface SpeechRecognitionEvent extends Event {
+  readonly results: SpeechRecognitionResultList;
+}
+interface SpeechRecognition extends EventTarget {
+  lang: string;
+  continuous: boolean;
+  interimResults: boolean;
+  onresult: ((event: SpeechRecognitionEvent) => void) | null;
+  onend: (() => void) | null;
+  onerror: ((event: Event) => void) | null;
+  start(): void;
+  stop(): void;
+}
+declare const SpeechRecognition: { new (): SpeechRecognition };
+
+declare global {
+  interface Window {
+    SpeechRecognition: { new (): SpeechRecognition };
+    webkitSpeechRecognition: { new (): SpeechRecognition };
+  }
+}
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -173,6 +213,27 @@ function LoadingBubble() {
   );
 }
 
+// ─── Voice waveform bars ──────────────────────────────────────────────────────
+
+function VoiceWaveform({ active, color = "#3E863E" }: { active: boolean; color?: string }) {
+  return (
+    <div className="flex items-center gap-0.5 h-5">
+      {[0.4, 0.7, 1, 0.7, 0.4, 0.9, 0.6].map((h, i) => (
+        <div
+          key={i}
+          className={`w-0.5 rounded-full transition-all ${active ? "animate-bounce" : ""}`}
+          style={{
+            height: active ? `${h * 18}px` : "4px",
+            backgroundColor: color,
+            animationDelay: `${i * 60}ms`,
+            animationDuration: "600ms",
+          }}
+        />
+      ))}
+    </div>
+  );
+}
+
 // ─── Input bar ────────────────────────────────────────────────────────────────
 
 function InputBar({
@@ -182,6 +243,11 @@ function InputBar({
   disabled,
   placeholder,
   textareaRef,
+  onMicClick,
+  isListening,
+  isMuted,
+  onToggleMute,
+  showVoiceControls = false,
 }: {
   value: string;
   onChange: (v: string) => void;
@@ -189,10 +255,39 @@ function InputBar({
   disabled: boolean;
   placeholder: string;
   textareaRef: React.RefObject<HTMLTextAreaElement | null>;
+  onMicClick?: () => void;
+  isListening?: boolean;
+  isMuted?: boolean;
+  onToggleMute?: () => void;
+  showVoiceControls?: boolean;
 }) {
   return (
-    <div className="border-t border-[#D0E8D0] p-4 bg-white">
+    <div className="border-t border-[#D0E8D0] p-4 bg-white space-y-2">
+      {/* Listening indicator */}
+      {isListening && (
+        <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-rose-50 border border-rose-200">
+          <VoiceWaveform active color="#e11d48" />
+          <span className="text-xs font-semibold text-rose-600">Listening… speak now</span>
+        </div>
+      )}
+
       <div className="flex gap-2 items-end">
+        {/* Mic toggle (negotiate mode only) */}
+        {showVoiceControls && onMicClick && (
+          <button
+            onClick={onMicClick}
+            disabled={disabled}
+            title={isListening ? "Stop listening" : "Speak your negotiation"}
+            className={`h-10 w-10 shrink-0 rounded-xl flex items-center justify-center transition-all border ${
+              isListening
+                ? "bg-rose-500 border-rose-500 text-white shadow-md shadow-rose-300 scale-105"
+                : "border-[#A8D4A8] bg-[#f0f7f0] text-[#3E863E] hover:bg-[#e8f5e8]"
+            } disabled:opacity-40`}
+          >
+            {isListening ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
+          </button>
+        )}
+
         <textarea
           ref={textareaRef}
           rows={2}
@@ -217,9 +312,26 @@ function InputBar({
           <Send className="w-4 h-4" />
         </Button>
       </div>
-      <p className="text-[10px] text-muted-foreground mt-1.5 px-1">
-        Enter to send · Shift+Enter for new line
-      </p>
+
+      <div className="flex items-center justify-between px-1">
+        <p className="text-[10px] text-muted-foreground">
+          Enter to send · Shift+Enter for new line
+          {showVoiceControls && " · 🎤 mic to speak"}
+        </p>
+        {showVoiceControls && onToggleMute && (
+          <button
+            onClick={onToggleMute}
+            title={isMuted ? "Unmute AI voice" : "Mute AI voice"}
+            className="flex items-center gap-1 text-[10px] text-muted-foreground hover:text-[#2d6a2d] transition-colors"
+          >
+            {isMuted ? (
+              <><VolumeX className="w-3.5 h-3.5" /> Voice off</>
+            ) : (
+              <><Volume2 className="w-3.5 h-3.5" /> Voice on</>
+            )}
+          </button>
+        )}
+      </div>
     </div>
   );
 }
@@ -263,6 +375,13 @@ function NegotiateApp() {
   const [budgetInput, setBudgetInput] = useState("");
   const [budgetLoading, setBudgetLoading] = useState(false);
 
+  // ── Voice state ────────────────────────────────────────────────────────────
+  const [isListening, setIsListening]   = useState(false);
+  const [isMuted, setIsMuted]           = useState(false);
+  const [isSpeaking, setIsSpeaking]     = useState(false);
+  const recognitionRef = useRef<SpeechRecognition | null>(null);
+  const audioRef       = useRef<HTMLAudioElement | null>(null);
+
   // ── Shared refs ────────────────────────────────────────────────────────────
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
@@ -275,6 +394,70 @@ function NegotiateApp() {
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [budgetMessages]);
+
+  // ── TTS helper ─────────────────────────────────────────────────────────────
+  const speakText = useCallback(async (text: string) => {
+    if (isMuted || !text.trim()) return;
+    try {
+      setIsSpeaking(true);
+      const res = await fetch("/api/tts", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text }),
+      });
+      if (!res.ok) return;
+
+      const blob = await res.blob();
+      const url  = URL.createObjectURL(blob);
+
+      // Reuse a single audio element
+      if (!audioRef.current) audioRef.current = new Audio();
+      audioRef.current.src = url;
+      audioRef.current.onended = () => {
+        setIsSpeaking(false);
+        URL.revokeObjectURL(url);
+      };
+      audioRef.current.onerror = () => setIsSpeaking(false);
+      await audioRef.current.play();
+    } catch {
+      setIsSpeaking(false);
+    }
+  }, [isMuted]);
+
+  // ── Mic toggle ─────────────────────────────────────────────────────────────
+  const handleMicClick = useCallback(() => {
+    const SpeechRec =
+      typeof window !== "undefined"
+        ? window.SpeechRecognition ?? window.webkitSpeechRecognition
+        : undefined;
+
+    if (!SpeechRec) {
+      alert("Speech recognition is not supported in this browser. Please use Chrome.");
+      return;
+    }
+
+    if (isListening) {
+      recognitionRef.current?.stop();
+      setIsListening(false);
+      return;
+    }
+
+    const rec = new SpeechRec();
+    rec.lang = "en-US";
+    rec.continuous = false;
+    rec.interimResults = false;
+
+    rec.onresult = (e: SpeechRecognitionEvent) => {
+      const transcript = e.results[0]?.[0]?.transcript ?? "";
+      setInput((prev) => (prev ? prev + " " + transcript : transcript));
+    };
+    rec.onend = () => setIsListening(false);
+    rec.onerror = () => setIsListening(false);
+
+    recognitionRef.current = rec;
+    rec.start();
+    setIsListening(true);
+  }, [isListening]);
 
   // ── Negotiate helpers ──────────────────────────────────────────────────────
 
@@ -331,6 +514,9 @@ function NegotiateApp() {
         setConfidenceScore(data.confidence_score || 0);
         setFeedbackTips(data.feedback || []);
         setSessionScore((prev) => [...prev, data.confidence_score || 0]);
+
+        // Auto-speak the AI reply via ElevenLabs
+        speakText(data.reply || "");
       } catch (err: unknown) {
         const errMsg: ChatMessage = {
           id: crypto.randomUUID(),
@@ -346,7 +532,7 @@ function NegotiateApp() {
         inputRef.current?.focus();
       }
     },
-    [loading, buildHistory]
+    [loading, buildHistory, speakText]
   );
 
   const resetSession = () => {
@@ -511,24 +697,47 @@ function NegotiateApp() {
 
       {/* ── Negotiate tab ──────────────────────────────────────────────────── */}
       {activeTab === "negotiate" && (
+        <div className="space-y-5">
+        {/* ── Empowerment banner ───────────────────────────────────────────── */}
+        <div className="rounded-2xl border border-[#A8D4A8] bg-gradient-to-r from-[#f0f7f0] via-[#e8f5e8] to-[#f0f7f0] px-5 py-4 flex items-start gap-3">
+          <span className="text-lg leading-none mt-0.5" aria-hidden>💼</span>
+          <p className="text-sm text-[#2d6a2d] leading-relaxed">
+            <strong>The average woman leaves $1M+ on the table</strong> over her career by not
+            negotiating her first offer.{" "}
+            <span className="font-medium">This is your practice round — make it count.</span>
+          </p>
+        </div>
+
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Chat column */}
           <div className="lg:col-span-2 flex flex-col rounded-2xl border border-[#D0E8D0] overflow-hidden card-soft bg-white">
             {/* Chat header */}
             <div className="flex items-center justify-between px-5 py-4 border-b border-[#D0E8D0] bg-gradient-to-r from-[#f0f7f0] to-[#e8f5e8]">
               <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#6b7280] to-[#4b5563] flex items-center justify-center text-white shadow-sm">
+                <div className="relative w-9 h-9 rounded-xl bg-gradient-to-br from-[#6b7280] to-[#4b5563] flex items-center justify-center text-white shadow-sm">
                   <Bot className="w-4 h-4" />
+                  {isSpeaking && (
+                    <span className="absolute -top-1 -right-1 w-3 h-3 rounded-full bg-[#3E863E] border-2 border-white animate-ping" />
+                  )}
                 </div>
                 <div>
                   <p className="font-heading font-semibold text-sm">
                     Jordan — Hiring Manager
                   </p>
                   <div className="flex items-center gap-1.5">
-                    <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                    <p className="text-[10px] text-muted-foreground">
-                      Powered by Gemini 2.5
-                    </p>
+                    {isSpeaking ? (
+                      <>
+                        <VoiceWaveform active color="#3E863E" />
+                        <p className="text-[10px] text-[#3E863E] font-semibold">Speaking…</p>
+                      </>
+                    ) : (
+                      <>
+                        <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                        <p className="text-[10px] text-muted-foreground">
+                          Gemini 2.5 · ElevenLabs Voice
+                        </p>
+                      </>
+                    )}
                   </div>
                 </div>
               </div>
@@ -571,8 +780,19 @@ function NegotiateApp() {
               onChange={setInput}
               onSend={sendMessage}
               disabled={loading}
-              placeholder="Type your negotiation message…"
+              placeholder="Type your negotiation message… or click 🎤"
               textareaRef={inputRef}
+              showVoiceControls
+              onMicClick={handleMicClick}
+              isListening={isListening}
+              isMuted={isMuted}
+              onToggleMute={() => {
+                if (!isMuted && audioRef.current) {
+                  audioRef.current.pause();
+                  setIsSpeaking(false);
+                }
+                setIsMuted((m) => !m);
+              }}
             />
           </div>
 
@@ -665,6 +885,7 @@ function NegotiateApp() {
             )}
           </div>
         </div>
+        </div>
       )}
 
       {/* ── Budget Coach tab ────────────────────────────────────────────────── */}
@@ -744,30 +965,24 @@ function NegotiateApp() {
               </div>
               <div className="space-y-2.5">
                 {[
-                  { label: "Monthly Income", value: profile.monthlyIncome },
-                  { label: "Liquid Savings", value: profile.otherCash },
-                  {
-                    label: "Student Loans",
-                    value: profile.studentLoanBalance,
-                    negative: true,
-                  },
-                  {
-                    label: "Credit Card Debt",
-                    value: profile.creditCardDebt,
-                    negative: true,
-                  },
-                ].map(({ label, value, negative }) => (
-                  <div key={label} className="flex items-center justify-between">
-                    <span className="text-xs text-muted-foreground">{label}</span>
+                  { label: "Monthly Income",    value: profile.monthlyIncome,     subtext: undefined, negative: false },
+                  { label: "Independence Fund", value: profile.otherCash,         subtext: "Your safety net for total independence.", negative: false },
+                  { label: "Student Loans",     value: profile.studentLoanBalance, subtext: undefined, negative: true },
+                  { label: "Credit Card Debt",  value: profile.creditCardDebt,    subtext: undefined, negative: true },
+                ].map(({ label, value, negative, subtext }) => (
+                  <div key={label} className="flex items-start justify-between gap-2">
+                    <div>
+                      <span className="text-xs text-muted-foreground">{label}</span>
+                      {subtext && (
+                        <p className="text-[9px] text-[#3E863E] leading-tight mt-0.5 italic">{subtext}</p>
+                      )}
+                    </div>
                     <span
-                      className={`text-xs font-semibold font-mono ${
-                        negative && value > 0
-                          ? "text-rose-500"
-                          : "text-[#2d6a2d]"
+                      className={`text-xs font-semibold font-mono shrink-0 ${
+                        negative && value > 0 ? "text-rose-500" : "text-[#2d6a2d]"
                       }`}
                     >
-                      {negative && value > 0 ? "-" : ""}$
-                      {value.toLocaleString()}
+                      {negative && value > 0 ? "-" : ""}${value.toLocaleString()}
                     </span>
                   </div>
                 ))}

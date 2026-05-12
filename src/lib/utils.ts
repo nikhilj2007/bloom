@@ -165,12 +165,11 @@ export const INVESTMENT_STRATEGIES: Record<InvestmentStrategy, { label: string; 
 };
 
 /**
- * Calculates the WorthWise "Glow Score" on a 1–100 scale tailored for
- * college students. Score starts at 50 and gains up to 25 points from
- * each of two pillars:
+ * Calculates the Glow Score on a strict 1–100 scale for college students.
  *
- * 1. Cash-flow ratio  — (monthly income + monthly aid) ÷ (rent + tuition)
- * 2. Asset coverage   — (Plaid balances + other cash) ÷ student-loan balance
+ * Base: 30 pts
+ * Cash Flow pillar  (max 35 pts): monthly surplus ratio vs. expenses
+ * Debt-to-Savings pillar (max 35 pts): liquid savings vs. total debt
  *
  * Final score is clamped to [1, 100].
  */
@@ -178,40 +177,44 @@ export function calculateGlowScore(
   accounts: PlaidAccount[],
   profile: CollegeProfile
 ): number {
-  let score = 50;
+  let score = 30;
 
-  // ── Pillar 1: cash-flow ratio (0–25 pts) ─────────────────────────────────
-  const monthlyIncome = profile.monthlyIncome + profile.financialAid / 12;
-  const monthlyExpenses = profile.monthlyRent + profile.monthlyTuition;
+  // ── Pillar 1: Cash Flow (0–35 pts) ────────────────────────────────────────
+  // Surplus = (monthly income + annual grants/12) − (monthly rent + monthly tuition)
+  const monthlyInflow  = profile.monthlyIncome + profile.financialAid / 12;
+  const monthlyOutflow = profile.monthlyRent + profile.monthlyTuition;
+  const surplus        = monthlyInflow - monthlyOutflow;
 
-  if (monthlyExpenses > 0) {
-    // ratio ≥ 2 (income is double expenses) → full 25 pts
-    const cashFlowPts = Math.min(25, (monthlyIncome / monthlyExpenses / 2) * 25);
-    score += cashFlowPts;
-  } else if (monthlyIncome > 0) {
-    // No expenses but there IS income → maximum cash-flow health
-    score += 25;
+  if (surplus > 0) {
+    // Scale: surplus equal to monthly outflow → full 35 pts (otherwise proportional)
+    const baseline = Math.max(monthlyOutflow, 1);
+    score += Math.min(35, (surplus / baseline) * 35);
   }
+  // Negative surplus → 0 pts added (already handled by not adding)
 
-  // ── Pillar 2: asset coverage ratio (0–25 pts) ─────────────────────────────
+  // ── Pillar 2: Debt-to-Savings (0–35 pts) ──────────────────────────────────
   let plaidLiquid = 0;
   for (const acct of accounts) {
     if (isFidelityBrokerage(acct) || isFidelityDebit(acct)) {
       plaidLiquid += acct.balances.current ?? 0;
     }
   }
-  const totalLiquid = plaidLiquid + profile.otherCash;
-  const loans = profile.studentLoanBalance;
+  const liquidSavings = plaidLiquid + profile.otherCash;
+  const totalDebt     = profile.studentLoanBalance + profile.creditCardDebt;
 
-  if (loans > 0) {
-    // ratio ≥ 1 (assets fully cover loans) → full 25 pts
-    const coveragePts = Math.min(25, (totalLiquid / loans) * 25);
-    score += coveragePts;
-  } else if (totalLiquid > 0) {
-    score += 25;
+  if (totalDebt === 0) {
+    // No debt at all → full pillar score
+    score += 35;
+  } else {
+    const ratio = liquidSavings / totalDebt;
+    if (ratio > 0.2) {
+      // Savings cover >20% of debt → scale up to 35 (full coverage = 35 pts)
+      score += Math.min(35, Math.max(0, ((ratio - 0.2) / 0.8) * 35));
+    }
+    // ratio ≤ 0.2 → 0 pts added
   }
 
-  return Math.max(1, Math.min(100, Math.round(score)));
+  return Math.min(100, Math.max(1, Math.round(score)));
 }
 
 /**

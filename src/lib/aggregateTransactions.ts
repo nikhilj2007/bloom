@@ -2,13 +2,13 @@ import type { CategorySummary } from "@/types";
 
 const MOCK_MONTHLY_INCOME = 1200;
 
-// Maps Plaid's primary category keys to readable labels
+// Maps Plaid's primary category keys to campus-reality labels
 const CATEGORY_LABELS: Record<string, string> = {
   FOOD_AND_DRINK: "Food & Drink",
-  TRANSPORTATION: "Transportation",
+  TRANSPORTATION: "Safe Transit (Uber/Lyft)",
   TRAVEL: "Travel",
-  ENTERTAINMENT: "Entertainment",
-  PERSONAL_CARE: "Personal Care",
+  ENTERTAINMENT: "Social & Campus Life",
+  PERSONAL_CARE: "Essentials & Self-Care",
   GENERAL_MERCHANDISE: "Shopping",
   HOME_IMPROVEMENT: "Home",
   MEDICAL: "Medical",
