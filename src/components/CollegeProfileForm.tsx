@@ -36,7 +36,7 @@ interface FieldConfig {
 const ASSET_FIELDS: FieldConfig[] = [
   { key: "monthlyIncome",  label: "Monthly Income",             placeholder: "0", hint: "Part-time job, work-study" },
   { key: "financialAid",   label: "Annual Grants / Scholarships",placeholder: "0", hint: "Aid that doesn't need repayment" },
-  { key: "otherCash",      label: "Other Cash & Savings",       placeholder: "0", hint: "Venmo, Zelle, physical cash" },
+  { key: "otherCash",      label: "Independence Fund",           placeholder: "0", hint: "Your safety net for total independence." },
 ];
 
 const EXPENSE_FIELDS: FieldConfig[] = [

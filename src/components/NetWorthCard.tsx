@@ -23,7 +23,7 @@ interface NetWorthCardProps {
 const ASSET_ROWS = [
   { key: "fidelityBrokerage" as const, label: "Fidelity Brokerage", icon: TrendingUp, color: "text-emerald-500", bg: "bg-emerald-50" },
   { key: "fidelityDebit"     as const, label: "Fidelity Cash",      icon: Wallet,     color: "text-sky-500",     bg: "bg-sky-50"     },
-  { key: "otherCash"         as const, label: "Other Cash",         icon: Banknote,   color: "text-amber-500",   bg: "bg-amber-50"   },
+  { key: "otherCash"         as const, label: "Independence Fund",  icon: Banknote,   color: "text-amber-500",   bg: "bg-amber-50"   },
   { key: "financialAid"      as const, label: "Grants / Aid",       icon: GraduationCap, color: "text-[#3E863E]", bg: "bg-[#f0f7f0]" },
 ];
 
@@ -160,6 +160,9 @@ export function NetWorthCard({ breakdown, isConnected, glowScore }: NetWorthCard
             <span>1</span>
             <span>100</span>
           </div>
+          <p className="text-[10px] text-[#3E863E]/70 italic text-center mt-2 px-4 leading-snug">
+            Women who invest by 22 retire 8 years earlier on average.
+          </p>
         </div>
       </div>
 

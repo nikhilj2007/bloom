@@ -22,6 +22,7 @@ import {
   Lightbulb,
   ChevronRight,
   BarChart2,
+  Megaphone,
 } from "lucide-react";
 import { MarketPulseTicker } from "@/components/MarketPulseTicker";
 import { calculateNetWorth, calculateGlowScore } from "@/lib/utils";
@@ -281,6 +282,32 @@ export function Dashboard() {
           </div>
 
           <div className="space-y-6">
+            {/* ── Advocacy Center ──────────────────────────────────── */}
+            <div className="rounded-2xl border-2 border-[#3E863E] bg-gradient-to-br from-[#f0f7f0] via-[#e8f5e8] to-[#f5faf5] p-5 space-y-4 card-glow">
+              <div className="flex items-start gap-3">
+                <div className="p-2 rounded-xl bg-[#3E863E]/10 shrink-0">
+                  <Megaphone className="w-4 h-4 text-[#3E863E]" />
+                </div>
+                <div>
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-[#3E863E] mb-1">
+                    Advocacy Alert
+                  </p>
+                  <p className="text-xs text-foreground leading-relaxed">
+                    Women are <strong className="text-[#2d6a2d]">50% less likely</strong> to
+                    negotiate their first starting salary. This choice compounds into{" "}
+                    <strong className="text-[#2d6a2d]">hundreds of thousands of dollars</strong>{" "}
+                    lost over a career. Don&apos;t leave money on the table.
+                  </p>
+                </div>
+              </div>
+              <Link href="/negotiate">
+                <button className="w-full py-2.5 rounded-xl gradient-brand text-white text-sm font-semibold flex items-center justify-center gap-2 hover:opacity-90 transition-opacity shadow-md">
+                  <ArrowRight className="w-4 h-4" />
+                  Practice Negotiation →
+                </button>
+              </Link>
+            </div>
+
             <Link href="/negotiate">
               <div className="group rounded-2xl border border-[#A8D4A8] bg-gradient-to-br from-[#f0f7f0] via-[#e8f5e8] to-[#f0f7f0] p-5 space-y-3 card-glow hover:shadow-xl transition-all duration-300 cursor-pointer">
                 <div className="flex items-center justify-between">
