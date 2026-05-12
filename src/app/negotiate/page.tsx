@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect, useCallback } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { useAuth, SignInButton } from "@clerk/nextjs";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -22,6 +23,8 @@ import {
   MicOff,
   Volume2,
   VolumeX,
+  Square,
+  MessageSquare,
 } from "lucide-react";
 import type { ChatMessage, GeminiNegotiationResponse } from "@/types";
 import { useProfile } from "@/context/ProfileContext";
@@ -35,6 +38,7 @@ interface SpeechRecognitionAlternative {
 }
 interface SpeechRecognitionResult {
   readonly length: number;
+  readonly isFinal: boolean;
   [index: number]: SpeechRecognitionAlternative;
 }
 interface SpeechRecognitionResultList {
@@ -42,6 +46,7 @@ interface SpeechRecognitionResultList {
   [index: number]: SpeechRecognitionResult;
 }
 interface SpeechRecognitionEvent extends Event {
+  readonly resultIndex: number;
   readonly results: SpeechRecognitionResultList;
 }
 interface SpeechRecognition extends EventTarget {
@@ -66,6 +71,8 @@ declare global {
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 type Tab = "negotiate" | "budget";
+type NegotiateMode = "text" | "voice";
+type VoiceState = "idle" | "listening" | "thinking" | "speaking";
 
 // ─── Confidence Meter ─────────────────────────────────────────────────────────
 
@@ -234,7 +241,7 @@ function VoiceWaveform({ active, color = "#3E863E" }: { active: boolean; color?:
   );
 }
 
-// ─── Input bar ────────────────────────────────────────────────────────────────
+// ─── Input bar (text mode) ────────────────────────────────────────────────────
 
 function InputBar({
   value,
@@ -263,7 +270,6 @@ function InputBar({
 }) {
   return (
     <div className="border-t border-[#D0E8D0] p-4 bg-white space-y-2">
-      {/* Listening indicator */}
       {isListening && (
         <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-rose-50 border border-rose-200">
           <VoiceWaveform active color="#e11d48" />
@@ -272,7 +278,6 @@ function InputBar({
       )}
 
       <div className="flex gap-2 items-end">
-        {/* Mic toggle (negotiate mode only) */}
         {showVoiceControls && onMicClick && (
           <button
             onClick={onMicClick}
@@ -336,11 +341,171 @@ function InputBar({
   );
 }
 
+// ─── Voice Mode Panel ─────────────────────────────────────────────────────────
+
+function VoiceModePanel({
+  voiceState,
+  isActive,
+  onToggle,
+  messages,
+  loading,
+  bottomRef,
+}: {
+  voiceState: VoiceState;
+  isActive: boolean;
+  onToggle: () => void;
+  messages: ChatMessage[];
+  loading: boolean;
+  bottomRef: React.RefObject<HTMLDivElement | null>;
+}) {
+  const STATUS: Record<VoiceState, string> = {
+    idle: "Tap the mic to start your session",
+    listening: "Listening…",
+    thinking: "Thinking…",
+    speaking: "Hiring Manager is Speaking…",
+  };
+
+  const isListening = voiceState === "listening";
+  const isThinking = voiceState === "thinking";
+  const isSpeaking = voiceState === "speaking";
+
+  return (
+    <div className="flex flex-col rounded-2xl border border-[#D0E8D0] overflow-hidden card-soft bg-white">
+      {/* Header */}
+      <div className="flex items-center justify-between px-5 py-4 border-b border-[#D0E8D0] bg-gradient-to-r from-[#f0f7f0] to-[#e8f5e8]">
+        <div className="flex items-center gap-3">
+          <div className="relative w-9 h-9 rounded-xl bg-gradient-to-br from-[#6b7280] to-[#4b5563] flex items-center justify-center text-white shadow-sm">
+            <Bot className="w-4 h-4" />
+            {isSpeaking && (
+              <span className="absolute -top-1 -right-1 w-3 h-3 rounded-full bg-[#3E863E] border-2 border-white animate-ping" />
+            )}
+          </div>
+          <div>
+            <p className="font-heading font-semibold text-sm">Jordan — Hiring Manager</p>
+            <div className="flex items-center gap-1.5">
+              {isSpeaking ? (
+                <>
+                  <VoiceWaveform active color="#3E863E" />
+                  <p className="text-[10px] text-[#3E863E] font-semibold">Speaking…</p>
+                </>
+              ) : (
+                <>
+                  <div className={`w-1.5 h-1.5 rounded-full ${isActive ? "bg-emerald-500 animate-pulse" : "bg-gray-300"}`} />
+                  <p className="text-[10px] text-muted-foreground">Gemini 2.5 · ElevenLabs Voice</p>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+        {isActive && (
+          <button
+            onClick={onToggle}
+            className="flex items-center gap-1.5 text-xs text-rose-500 hover:text-rose-600 hover:bg-rose-50 px-2.5 py-1.5 rounded-lg transition-colors"
+          >
+            <Square className="w-3 h-3 fill-current" /> End Session
+          </button>
+        )}
+      </div>
+
+      {/* Central mic controls */}
+      <div className="flex flex-col items-center py-10 px-5 gap-6 bg-gradient-to-b from-[#f5faf5] to-white border-b border-[#E8F5E8]">
+        {/* Big animated mic button */}
+        <div className="relative flex items-center justify-center">
+          {/* Outer ring animations */}
+          {isListening && (
+            <>
+              <span className="absolute w-36 h-36 rounded-full bg-rose-400/15 animate-ping" style={{ animationDuration: "1.2s" }} />
+              <span className="absolute w-28 h-28 rounded-full bg-rose-400/20 animate-ping" style={{ animationDuration: "0.8s" }} />
+            </>
+          )}
+          {isSpeaking && (
+            <>
+              <span className="absolute w-36 h-36 rounded-full bg-[#3E863E]/10 animate-ping" style={{ animationDuration: "1.2s" }} />
+              <span className="absolute w-28 h-28 rounded-full bg-[#3E863E]/15 animate-ping" style={{ animationDuration: "0.8s" }} />
+            </>
+          )}
+
+          <button
+            onClick={onToggle}
+            disabled={isThinking || isSpeaking}
+            className={`relative w-24 h-24 rounded-full flex items-center justify-center transition-all duration-300 shadow-xl focus:outline-none focus-visible:ring-4 focus-visible:ring-[#3E863E]/40
+              ${isListening
+                ? "bg-rose-500 shadow-rose-300/50 scale-110"
+                : isThinking
+                ? "bg-[#e8f5e8] cursor-not-allowed shadow-none"
+                : isSpeaking
+                ? "bg-[#3E863E]/20 cursor-not-allowed"
+                : "bg-[#3E863E] hover:bg-[#2d6a2d] hover:scale-105 shadow-[#3E863E]/40 cursor-pointer"
+              }`}
+          >
+            {isThinking ? (
+              <div className="w-9 h-9 border-[3px] border-[#3E863E] border-t-transparent rounded-full animate-spin" />
+            ) : isSpeaking ? (
+              <VoiceWaveform active color="#3E863E" />
+            ) : (
+              <Mic className={`w-10 h-10 ${isListening ? "text-white" : "text-white"}`} />
+            )}
+          </button>
+        </div>
+
+        {/* Status label */}
+        <div className="text-center space-y-1.5">
+          <p className={`text-sm font-semibold transition-colors duration-200 ${
+            isListening
+              ? "text-rose-600"
+              : isSpeaking
+              ? "text-[#3E863E]"
+              : isThinking
+              ? "text-[#2d6a2d]"
+              : "text-muted-foreground"
+          }`}>
+            {STATUS[voiceState]}
+          </p>
+          {!isActive && (
+            <p className="text-[11px] text-muted-foreground/70">
+              Your mic gesture enables audio autoplay
+            </p>
+          )}
+          {isActive && !isListening && !isThinking && !isSpeaking && (
+            <p className="text-[11px] text-muted-foreground/70">Session active · waiting for audio to finish</p>
+          )}
+        </div>
+      </div>
+
+      {/* Live transcript */}
+      <div className="flex-1 overflow-y-auto max-h-80 min-h-40">
+        {messages.length <= 1 && !loading ? (
+          <div className="flex flex-col items-center justify-center h-40 gap-2 text-center px-5">
+            <div className="w-10 h-10 rounded-2xl bg-[#F0F7F0] flex items-center justify-center">
+              <MessageSquare className="w-4 h-4 text-[#3E863E]" />
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Your conversation will appear here
+            </p>
+          </div>
+        ) : (
+          <div className="p-5 space-y-4">
+            <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground text-center">
+              Live Transcript
+            </p>
+            {messages.map((msg) => (
+              <ChatBubble key={msg.id} msg={msg} />
+            ))}
+            {loading && <LoadingBubble />}
+            <div ref={bottomRef} />
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 // ─── Main negotiate/coach app ─────────────────────────────────────────────────
 
 function NegotiateApp() {
-  // ── Tab ────────────────────────────────────────────────────────────────────
+  // ── Tabs ───────────────────────────────────────────────────────────────────
   const [activeTab, setActiveTab] = useState<Tab>("negotiate");
+  const [negotiateMode, setNegotiateMode] = useState<NegotiateMode>("text");
 
   // ── Contexts ───────────────────────────────────────────────────────────────
   const { profile } = useProfile();
@@ -376,17 +541,25 @@ function NegotiateApp() {
   const [budgetLoading, setBudgetLoading] = useState(false);
 
   // ── Voice state ────────────────────────────────────────────────────────────
-  const [isListening, setIsListening]   = useState(false);
+  const [isListening, setIsListening]   = useState(false);   // text mode mic
   const [isMuted, setIsMuted]           = useState(false);
   const [isSpeaking, setIsSpeaking]     = useState(false);
-  const recognitionRef = useRef<SpeechRecognition | null>(null);
-  const audioRef       = useRef<HTMLAudioElement | null>(null);
+  const [voiceState, setVoiceState]     = useState<VoiceState>("idle");
 
-  // ── Shared refs ────────────────────────────────────────────────────────────
-  const bottomRef = useRef<HTMLDivElement>(null);
-  const inputRef = useRef<HTMLTextAreaElement>(null);
-  const budgetInputRef = useRef<HTMLTextAreaElement>(null);
+  // ── Refs ───────────────────────────────────────────────────────────────────
+  const recognitionRef   = useRef<SpeechRecognition | null>(null);
+  const audioRef         = useRef<HTMLAudioElement | null>(null);
+  const voiceActiveRef   = useRef(false);
+  const messagesRef      = useRef<ChatMessage[]>(messages);
+  const sendMessageRef   = useRef<(text: string) => void>(() => {});
+  const bottomRef        = useRef<HTMLDivElement>(null);
+  const inputRef         = useRef<HTMLTextAreaElement>(null);
+  const budgetInputRef   = useRef<HTMLTextAreaElement>(null);
 
+  // Keep messagesRef in sync
+  useEffect(() => { messagesRef.current = messages; }, [messages]);
+
+  // Auto-scroll
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
@@ -395,7 +568,203 @@ function NegotiateApp() {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [budgetMessages]);
 
-  // ── TTS helper ─────────────────────────────────────────────────────────────
+  // Stop voice session when switching away from voice mode
+  useEffect(() => {
+    if (negotiateMode !== "voice" || activeTab !== "negotiate") {
+      if (voiceActiveRef.current) {
+        voiceActiveRef.current = false;
+        recognitionRef.current?.stop();
+        audioRef.current?.pause();
+        setIsSpeaking(false);
+        setVoiceState("idle");
+      }
+    }
+  }, [negotiateMode, activeTab]);
+
+  // ── Continuous voice loop ──────────────────────────────────────────────────
+  // Empty deps — all dynamic values accessed via refs or stable state setters
+  const runVoiceLoop = useCallback(() => {
+    if (!voiceActiveRef.current) return;
+
+    const SpeechRec =
+      typeof window !== "undefined"
+        ? window.SpeechRecognition ?? window.webkitSpeechRecognition
+        : undefined;
+
+    if (!SpeechRec) {
+      alert("Speech recognition is not supported in this browser. Please use Chrome.");
+      voiceActiveRef.current = false;
+      setVoiceState("idle");
+      return;
+    }
+
+    setVoiceState("listening");
+
+    const rec = new SpeechRec();
+    rec.lang = "en-US";
+    rec.continuous = true;      // keep mic open until we explicitly call stop()
+    rec.interimResults = true;  // receive partial results so we can reset the timer
+
+    let finalTranscript = "";
+    let silenceTimer: ReturnType<typeof setTimeout> | null = null;
+    const SILENCE_MS = 1500; // submit after 1.5 s of no new speech
+
+    rec.onresult = (e: SpeechRecognitionEvent) => {
+      // Accumulate only confirmed final segments to avoid duplicates
+      for (let i = e.resultIndex; i < e.results.length; i++) {
+        const result = e.results[i];
+        if (result.isFinal && result[0]) {
+          finalTranscript += result[0].transcript + " ";
+        }
+      }
+      // Each new word resets the silence countdown
+      if (silenceTimer) clearTimeout(silenceTimer);
+      if (voiceActiveRef.current) {
+        silenceTimer = setTimeout(() => {
+          rec.stop(); // triggers onend → auto-submit
+        }, SILENCE_MS);
+      }
+    };
+
+    rec.onend = async () => {
+      if (silenceTimer) clearTimeout(silenceTimer);
+      if (!voiceActiveRef.current) return;
+
+      // No speech detected — restart after brief pause
+      if (!finalTranscript.trim()) {
+        setTimeout(() => { if (voiceActiveRef.current) runVoiceLoop(); }, 800);
+        return;
+      }
+
+      setVoiceState("thinking");
+
+      const userMsg: ChatMessage = {
+        id: crypto.randomUUID(),
+        role: "user",
+        content: finalTranscript.trim(),
+        timestamp: new Date(),
+      };
+      setMessages((prev) => [...prev, userMsg]);
+      setLoading(true);
+
+      try {
+        // Build history from the snapshot BEFORE this user message
+        const history = messagesRef.current
+          .filter((m) => m.id !== "intro" && !m.content.startsWith("Error:"))
+          .map((m) => ({
+            role: (m.role === "user" ? "user" : "model") as "user" | "model",
+            parts: [{ text: m.content }],
+          }));
+
+        const res = await fetch("/api/chat", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ message: finalTranscript.trim(), history }),
+        });
+
+        if (!res.ok) throw new Error(`Server error: ${res.status}`);
+
+        const data: GeminiNegotiationResponse & { error?: string } = await res.json();
+        if (data.error) throw new Error(data.error);
+
+        const assistantMsg: ChatMessage = {
+          id: crypto.randomUUID(),
+          role: "assistant",
+          content: data.reply || "I didn't generate a proper reply.",
+          confidence_score: data.confidence_score || 0,
+          feedback: data.feedback || [],
+          timestamp: new Date(),
+        };
+
+        setMessages((prev) => [...prev, assistantMsg]);
+        setConfidenceScore(data.confidence_score || 0);
+        setFeedbackTips(data.feedback || []);
+        setSessionScore((prev) => [...prev, data.confidence_score || 0]);
+
+        // ── Speak the reply ──────────────────────────────────────────────────
+        setVoiceState("speaking");
+        setIsSpeaking(true);
+
+        const ttsRes = await fetch("/api/tts", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ text: data.reply }),
+        });
+
+        if (ttsRes.ok) {
+          const blob = await ttsRes.blob();
+          const audioUrl = URL.createObjectURL(blob);
+          const audio = new Audio(audioUrl);
+          audioRef.current = audio;
+
+          audio.onended = () => {
+            setIsSpeaking(false);
+            URL.revokeObjectURL(audioUrl);
+            if (voiceActiveRef.current) {
+              runVoiceLoop(); // Continue the loop
+            } else {
+              setVoiceState("idle");
+            }
+          };
+
+          audio.onerror = () => {
+            console.error("Voice mode: audio playback error");
+            setIsSpeaking(false);
+            URL.revokeObjectURL(audioUrl);
+            if (voiceActiveRef.current) runVoiceLoop();
+            else setVoiceState("idle");
+          };
+
+          audio.play().catch(console.error);
+        } else {
+          // TTS failed — skip speaking, restart listening
+          setIsSpeaking(false);
+          if (voiceActiveRef.current) runVoiceLoop();
+          else setVoiceState("idle");
+        }
+      } catch (err) {
+        const errMsg: ChatMessage = {
+          id: crypto.randomUUID(),
+          role: "assistant",
+          content: `Error: ${err instanceof Error ? err.message : String(err)}`,
+          timestamp: new Date(),
+        };
+        setMessages((prev) => [...prev, errMsg]);
+        setIsSpeaking(false);
+        if (voiceActiveRef.current) {
+          setTimeout(() => runVoiceLoop(), 1500);
+        } else {
+          setVoiceState("idle");
+        }
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    rec.onerror = () => {
+      if (!voiceActiveRef.current) return;
+      setTimeout(() => { if (voiceActiveRef.current) runVoiceLoop(); }, 1000);
+    };
+
+    recognitionRef.current = rec;
+    rec.start();
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const toggleVoiceSession = useCallback(() => {
+    if (voiceActiveRef.current) {
+      voiceActiveRef.current = false;
+      recognitionRef.current?.stop();
+      audioRef.current?.pause();
+      setIsSpeaking(false);
+      setVoiceState("idle");
+    } else {
+      // User gesture here satisfies browser autoplay policy for subsequent audio
+      voiceActiveRef.current = true;
+      runVoiceLoop();
+    }
+  }, [runVoiceLoop]);
+
+  // ── Text mode TTS helper ───────────────────────────────────────────────────
   const speakText = useCallback(async (text: string) => {
     if (isMuted || !text.trim()) return;
     try {
@@ -405,26 +774,30 @@ function NegotiateApp() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ text }),
       });
-      if (!res.ok) return;
+      if (!res.ok) { setIsSpeaking(false); return; }
 
       const blob = await res.blob();
-      const url  = URL.createObjectURL(blob);
+      const audioUrl = URL.createObjectURL(blob);
+      const audio = new Audio(audioUrl);
+      audioRef.current = audio;
 
-      // Reuse a single audio element
-      if (!audioRef.current) audioRef.current = new Audio();
-      audioRef.current.src = url;
-      audioRef.current.onended = () => {
+      audio.onended = () => {
         setIsSpeaking(false);
-        URL.revokeObjectURL(url);
+        URL.revokeObjectURL(audioUrl);
       };
-      audioRef.current.onerror = () => setIsSpeaking(false);
-      await audioRef.current.play();
+      audio.onerror = () => {
+        console.error("Text mode: audio playback error");
+        setIsSpeaking(false);
+        URL.revokeObjectURL(audioUrl);
+      };
+
+      audio.play().catch(console.error);
     } catch {
       setIsSpeaking(false);
     }
   }, [isMuted]);
 
-  // ── Mic toggle ─────────────────────────────────────────────────────────────
+  // ── Text mode mic toggle (continuous + 2s silence → auto-send) ──────────────
   const handleMicClick = useCallback(() => {
     const SpeechRec =
       typeof window !== "undefined"
@@ -444,15 +817,40 @@ function NegotiateApp() {
 
     const rec = new SpeechRec();
     rec.lang = "en-US";
-    rec.continuous = false;
-    rec.interimResults = false;
+    rec.continuous = true;
+    rec.interimResults = true;
+
+    let collectedTranscript = "";
+    let silenceTimer: ReturnType<typeof setTimeout> | null = null;
+    const SILENCE_MS = 2000; // slightly longer (2 s) for deliberate text dictation
 
     rec.onresult = (e: SpeechRecognitionEvent) => {
-      const transcript = e.results[0]?.[0]?.transcript ?? "";
-      setInput((prev) => (prev ? prev + " " + transcript : transcript));
+      for (let i = e.resultIndex; i < e.results.length; i++) {
+        const result = e.results[i];
+        if (result.isFinal && result[0]) {
+          collectedTranscript += result[0].transcript + " ";
+          setInput((prev) => (prev ? prev + " " + result[0].transcript : result[0].transcript));
+        }
+      }
+      if (silenceTimer) clearTimeout(silenceTimer);
+      silenceTimer = setTimeout(() => rec.stop(), SILENCE_MS);
     };
-    rec.onend = () => setIsListening(false);
-    rec.onerror = () => setIsListening(false);
+
+    rec.onend = () => {
+      if (silenceTimer) clearTimeout(silenceTimer);
+      setIsListening(false);
+      const text = collectedTranscript.trim();
+      if (text) {
+        // Auto-send after silence — use stable ref to avoid stale closure
+        sendMessageRef.current(text);
+        setInput("");
+      }
+    };
+
+    rec.onerror = () => {
+      if (silenceTimer) clearTimeout(silenceTimer);
+      setIsListening(false);
+    };
 
     recognitionRef.current = rec;
     rec.start();
@@ -496,15 +894,13 @@ function NegotiateApp() {
           throw new Error(errorText || `Server responded with status ${res.status}`);
         }
 
-        const data: GeminiNegotiationResponse & { error?: string } =
-          await res.json();
+        const data: GeminiNegotiationResponse & { error?: string } = await res.json();
         if (data.error) throw new Error(data.error);
 
         const assistantMsg: ChatMessage = {
           id: crypto.randomUUID(),
           role: "assistant",
-          content:
-            data.reply || "I didn't generate a proper reply, check backend logs.",
+          content: data.reply || "I didn't generate a proper reply, check backend logs.",
           confidence_score: data.confidence_score || 0,
           feedback: data.feedback || [],
           timestamp: new Date(),
@@ -515,7 +911,6 @@ function NegotiateApp() {
         setFeedbackTips(data.feedback || []);
         setSessionScore((prev) => [...prev, data.confidence_score || 0]);
 
-        // Auto-speak the AI reply via ElevenLabs
         speakText(data.reply || "");
       } catch (err: unknown) {
         const errMsg: ChatMessage = {
@@ -535,7 +930,18 @@ function NegotiateApp() {
     [loading, buildHistory, speakText]
   );
 
+  // Keep sendMessageRef pointing at the latest sendMessage closure
+  useEffect(() => { sendMessageRef.current = sendMessage; }, [sendMessage]);
+
   const resetSession = () => {
+    // Stop any active voice session
+    if (voiceActiveRef.current) {
+      voiceActiveRef.current = false;
+      recognitionRef.current?.stop();
+      audioRef.current?.pause();
+      setIsSpeaking(false);
+      setVoiceState("idle");
+    }
     setMessages([
       {
         id: "intro",
@@ -623,8 +1029,7 @@ function NegotiateApp() {
           id: crypto.randomUUID(),
           role: "assistant",
           content:
-            data.reply ||
-            "I couldn't generate a response, check backend logs.",
+            data.reply || "I couldn't generate a response, check backend logs.",
           timestamp: new Date(),
         };
 
@@ -669,7 +1074,7 @@ function NegotiateApp() {
 
   return (
     <div className="min-h-[calc(100vh-4rem)] max-w-6xl mx-auto px-4 sm:px-6 py-6 space-y-5">
-      {/* ── Tab selector ───────────────────────────────────────────────────── */}
+      {/* ── Top-level tab selector ──────────────────────────────────────────── */}
       <div className="flex items-center gap-1 p-1 rounded-xl bg-[#F0F7F0] border border-[#D0E8D0] w-fit">
         <button
           onClick={() => setActiveTab("negotiate")}
@@ -698,193 +1103,232 @@ function NegotiateApp() {
       {/* ── Negotiate tab ──────────────────────────────────────────────────── */}
       {activeTab === "negotiate" && (
         <div className="space-y-5">
-        {/* ── Empowerment banner ───────────────────────────────────────────── */}
-        <div className="rounded-2xl border border-[#A8D4A8] bg-gradient-to-r from-[#f0f7f0] via-[#e8f5e8] to-[#f0f7f0] px-5 py-4 flex items-start gap-3">
-          <span className="text-lg leading-none mt-0.5" aria-hidden>💼</span>
-          <p className="text-sm text-[#2d6a2d] leading-relaxed">
-            <strong>The average woman leaves $1M+ on the table</strong> over her career by not
-            negotiating her first offer.{" "}
-            <span className="font-medium">This is your practice round — make it count.</span>
-          </p>
-        </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Chat column */}
-          <div className="lg:col-span-2 flex flex-col rounded-2xl border border-[#D0E8D0] overflow-hidden card-soft bg-white">
-            {/* Chat header */}
-            <div className="flex items-center justify-between px-5 py-4 border-b border-[#D0E8D0] bg-gradient-to-r from-[#f0f7f0] to-[#e8f5e8]">
-              <div className="flex items-center gap-3">
-                <div className="relative w-9 h-9 rounded-xl bg-gradient-to-br from-[#6b7280] to-[#4b5563] flex items-center justify-center text-white shadow-sm">
-                  <Bot className="w-4 h-4" />
-                  {isSpeaking && (
-                    <span className="absolute -top-1 -right-1 w-3 h-3 rounded-full bg-[#3E863E] border-2 border-white animate-ping" />
-                  )}
-                </div>
-                <div>
-                  <p className="font-heading font-semibold text-sm">
-                    Jordan — Hiring Manager
-                  </p>
-                  <div className="flex items-center gap-1.5">
-                    {isSpeaking ? (
-                      <>
-                        <VoiceWaveform active color="#3E863E" />
-                        <p className="text-[10px] text-[#3E863E] font-semibold">Speaking…</p>
-                      </>
-                    ) : (
-                      <>
-                        <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                        <p className="text-[10px] text-muted-foreground">
-                          Gemini 2.5 · ElevenLabs Voice
-                        </p>
-                      </>
-                    )}
-                  </div>
-                </div>
-              </div>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={resetSession}
-                className="gap-1.5 text-xs text-[#2d6a2d] hover:bg-[#F0F7F0] hover:text-[#1e551e]"
-              >
-                <RefreshCw className="w-3.5 h-3.5" /> New Session
-              </Button>
-            </div>
-
-            {/* Messages */}
-            <div className="flex-1 overflow-y-auto p-5 space-y-4 bg-gradient-to-b from-[#f5faf5] to-white">
-              {messages.map((msg) => (
-                <ChatBubble key={msg.id} msg={msg} />
-              ))}
-              {loading && <LoadingBubble />}
-              <div ref={bottomRef} />
-            </div>
-
-            {/* Starter prompts */}
-            {messages.filter((m) => m.role === "user").length === 0 && (
-              <div className="px-5 pb-3 flex flex-wrap gap-2">
-                {NEGOTIATE_STARTER_PROMPTS.map((p) => (
-                  <button
-                    key={p}
-                    onClick={() => sendMessage(p)}
-                    className="text-xs px-3 py-1.5 rounded-full border border-[#A8D4A8] bg-[#F0F7F0] text-[#2d6a2d] hover:bg-[#e8f5e8] transition-colors"
-                  >
-                    {p.length > 52 ? p.slice(0, 52) + "…" : p}
-                  </button>
-                ))}
-              </div>
-            )}
-
-            <InputBar
-              value={input}
-              onChange={setInput}
-              onSend={sendMessage}
-              disabled={loading}
-              placeholder="Type your negotiation message… or click 🎤"
-              textareaRef={inputRef}
-              showVoiceControls
-              onMicClick={handleMicClick}
-              isListening={isListening}
-              isMuted={isMuted}
-              onToggleMute={() => {
-                if (!isMuted && audioRef.current) {
-                  audioRef.current.pause();
-                  setIsSpeaking(false);
-                }
-                setIsMuted((m) => !m);
-              }}
-            />
+          {/* Empowerment banner */}
+          <div className="rounded-2xl border border-[#A8D4A8] bg-gradient-to-r from-[#f0f7f0] via-[#e8f5e8] to-[#f0f7f0] px-5 py-4 flex items-start gap-3">
+            <span className="text-lg leading-none mt-0.5" aria-hidden>💼</span>
+            <p className="text-sm text-[#2d6a2d] leading-relaxed">
+              <strong>The average woman leaves $1M+ on the table</strong> over her career by not
+              negotiating her first offer.{" "}
+              <span className="font-medium">This is your practice round — make it count.</span>
+            </p>
           </div>
 
-          {/* Side panel */}
-          <div className="space-y-5">
-            {/* Confidence meter */}
-            <div className="rounded-2xl border border-[#D0E8D0] bg-white p-5 card-soft space-y-4">
-              <div className="flex items-center justify-between">
-                <h3 className="font-heading font-semibold text-sm">
-                  Negotiation Score
-                </h3>
-                {sessionScore.length > 0 && (
-                  <Badge className="bg-[#F0F7F0] text-[#2d6a2d] border-[#A8D4A8] border text-[10px] font-semibold">
-                    Avg: {avgScore}/10
-                  </Badge>
-                )}
-              </div>
+          {/* ── Text / Voice mode sub-tabs ────────────────────────────────── */}
+          <div className="flex items-center gap-1 p-1 rounded-xl bg-white border border-[#D0E8D0] w-fit shadow-sm">
+            <button
+              onClick={() => setNegotiateMode("text")}
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-semibold transition-all ${
+                negotiateMode === "text"
+                  ? "bg-[#3E863E] text-white shadow-sm"
+                  : "text-[#2d6a2d] hover:bg-[#e8f5e8]"
+              }`}
+            >
+              <MessageSquare className="w-3.5 h-3.5" />
+              Text Mode
+            </button>
+            <button
+              onClick={() => setNegotiateMode("voice")}
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-semibold transition-all ${
+                negotiateMode === "voice"
+                  ? "bg-[#3E863E] text-white shadow-sm"
+                  : "text-[#2d6a2d] hover:bg-[#e8f5e8]"
+              }`}
+            >
+              <Mic className="w-3.5 h-3.5" />
+              Voice Mode
+            </button>
+          </div>
 
-              {confidenceScore > 0 ? (
-                <ConfidenceMeter score={confidenceScore} />
-              ) : (
-                <div className="text-center py-6 text-muted-foreground text-sm space-y-2">
-                  <div className="w-12 h-12 rounded-2xl bg-[#F0F7F0] flex items-center justify-center mx-auto">
-                    <Sparkles className="w-5 h-5 text-[#3E863E]" />
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* ── Main chat column ──────────────────────────────────────────── */}
+            <div className="lg:col-span-2">
+
+              {/* TEXT MODE */}
+              {negotiateMode === "text" && (
+                <div className="flex flex-col rounded-2xl border border-[#D0E8D0] overflow-hidden card-soft bg-white">
+                  {/* Chat header */}
+                  <div className="flex items-center justify-between px-5 py-4 border-b border-[#D0E8D0] bg-gradient-to-r from-[#f0f7f0] to-[#e8f5e8]">
+                    <div className="flex items-center gap-3">
+                      <div className="relative w-9 h-9 rounded-xl bg-gradient-to-br from-[#6b7280] to-[#4b5563] flex items-center justify-center text-white shadow-sm">
+                        <Bot className="w-4 h-4" />
+                        {isSpeaking && (
+                          <span className="absolute -top-1 -right-1 w-3 h-3 rounded-full bg-[#3E863E] border-2 border-white animate-ping" />
+                        )}
+                      </div>
+                      <div>
+                        <p className="font-heading font-semibold text-sm">Jordan — Hiring Manager</p>
+                        <div className="flex items-center gap-1.5">
+                          {isSpeaking ? (
+                            <>
+                              <VoiceWaveform active color="#3E863E" />
+                              <p className="text-[10px] text-[#3E863E] font-semibold">Speaking…</p>
+                            </>
+                          ) : (
+                            <>
+                              <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                              <p className="text-[10px] text-muted-foreground">
+                                Gemini 2.5 · ElevenLabs Voice
+                              </p>
+                            </>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={resetSession}
+                      className="gap-1.5 text-xs text-[#2d6a2d] hover:bg-[#F0F7F0] hover:text-[#1e551e]"
+                    >
+                      <RefreshCw className="w-3.5 h-3.5" /> New Session
+                    </Button>
                   </div>
-                  <p className="text-xs">
-                    Send your first message to see your score
-                  </p>
+
+                  {/* Messages */}
+                  <div className="flex-1 overflow-y-auto p-5 space-y-4 bg-gradient-to-b from-[#f5faf5] to-white min-h-80 max-h-[480px]">
+                    {messages.map((msg) => (
+                      <ChatBubble key={msg.id} msg={msg} />
+                    ))}
+                    {loading && <LoadingBubble />}
+                    <div ref={bottomRef} />
+                  </div>
+
+                  {/* Starter prompts */}
+                  {messages.filter((m) => m.role === "user").length === 0 && (
+                    <div className="px-5 pb-3 flex flex-wrap gap-2">
+                      {NEGOTIATE_STARTER_PROMPTS.map((p) => (
+                        <button
+                          key={p}
+                          onClick={() => sendMessage(p)}
+                          className="text-xs px-3 py-1.5 rounded-full border border-[#A8D4A8] bg-[#F0F7F0] text-[#2d6a2d] hover:bg-[#e8f5e8] transition-colors"
+                        >
+                          {p.length > 52 ? p.slice(0, 52) + "…" : p}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+
+                  <InputBar
+                    value={input}
+                    onChange={setInput}
+                    onSend={sendMessage}
+                    disabled={loading}
+                    placeholder="Type your negotiation message… or click 🎤"
+                    textareaRef={inputRef}
+                    showVoiceControls
+                    onMicClick={handleMicClick}
+                    isListening={isListening}
+                    isMuted={isMuted}
+                    onToggleMute={() => {
+                      if (!isMuted && audioRef.current) {
+                        audioRef.current.pause();
+                        setIsSpeaking(false);
+                      }
+                      setIsMuted((m) => !m);
+                    }}
+                  />
                 </div>
               )}
 
-              <Separator className="bg-[#E0F0E0]" />
-              <FeedbackPanel tips={feedbackTips} />
+              {/* VOICE MODE */}
+              {negotiateMode === "voice" && (
+                <VoiceModePanel
+                  voiceState={voiceState}
+                  isActive={voiceActiveRef.current}
+                  onToggle={toggleVoiceSession}
+                  messages={messages}
+                  loading={loading}
+                  bottomRef={bottomRef}
+                />
+              )}
             </div>
 
-            {/* Negotiation Playbook */}
-            <div className="rounded-2xl border border-[#A8D4A8] bg-gradient-to-br from-[#f0f7f0] to-[#e8f5e8] p-5 space-y-3">
-              <div className="flex items-center gap-2 font-heading font-semibold text-sm text-[#2d6a2d]">
-                <Lightbulb className="w-4 h-4" />
-                Negotiation Playbook
-              </div>
-              <ul className="space-y-2">
-                {[
-                  "Always anchor with a number first — let them react.",
-                  'Use market data: "Glassdoor shows $X for this role."',
-                  "Mention specific skills or coursework that add value.",
-                  "Be silent after making your ask — don't fill the pause.",
-                  "Express enthusiasm for the role before pushing on pay.",
-                ].map((tip) => (
-                  <li
-                    key={tip}
-                    className="flex gap-2 text-xs text-muted-foreground"
-                  >
-                    <span className="gradient-brand-text font-bold shrink-0">
-                      ›
-                    </span>
-                    {tip}
-                  </li>
-                ))}
-              </ul>
-            </div>
-
-            {/* Session history */}
-            {sessionScore.length > 0 && (
-              <div className="rounded-2xl border border-[#D0E8D0] bg-white p-5 card-soft space-y-3">
-                <h3 className="font-heading font-semibold text-sm">
-                  Session Progress
-                </h3>
-                <div className="flex gap-1.5 flex-wrap">
-                  {sessionScore.map((s, i) => (
-                    <div
-                      key={i}
-                      className={`w-8 h-8 rounded-xl flex items-center justify-center text-xs font-bold text-currency text-white shadow-sm ${
-                        s >= 8
-                          ? "bg-gradient-to-br from-emerald-400 to-[#2ECC71]"
-                          : s >= 5
-                          ? "gradient-brand"
-                          : "bg-gradient-to-br from-[#5aaa5a] to-rose-400"
-                      }`}
-                    >
-                      {s}
-                    </div>
-                  ))}
+            {/* ── Side panel (shared across text & voice modes) ─────────────── */}
+            <div className="space-y-5">
+              {/* Confidence meter */}
+              <div className="rounded-2xl border border-[#D0E8D0] bg-white p-5 card-soft space-y-4">
+                <div className="flex items-center justify-between">
+                  <h3 className="font-heading font-semibold text-sm">
+                    Negotiation Score
+                  </h3>
+                  {sessionScore.length > 0 && (
+                    <Badge className="bg-[#F0F7F0] text-[#2d6a2d] border-[#A8D4A8] border text-[10px] font-semibold">
+                      Avg: {avgScore}/10
+                    </Badge>
+                  )}
                 </div>
-                <p className="text-[10px] text-muted-foreground">
-                  {sessionScore.length} exchange
-                  {sessionScore.length !== 1 ? "s" : ""} this session
-                </p>
+
+                {confidenceScore > 0 ? (
+                  <ConfidenceMeter score={confidenceScore} />
+                ) : (
+                  <div className="text-center py-6 text-muted-foreground text-sm space-y-2">
+                    <div className="w-12 h-12 rounded-2xl bg-[#F0F7F0] flex items-center justify-center mx-auto">
+                      <Sparkles className="w-5 h-5 text-[#3E863E]" />
+                    </div>
+                    <p className="text-xs">
+                      {negotiateMode === "voice"
+                        ? "Start the voice session to see your score"
+                        : "Send your first message to see your score"}
+                    </p>
+                  </div>
+                )}
+
+                <Separator className="bg-[#E0F0E0]" />
+                <FeedbackPanel tips={feedbackTips} />
               </div>
-            )}
+
+              {/* Negotiation Playbook */}
+              <div className="rounded-2xl border border-[#A8D4A8] bg-gradient-to-br from-[#f0f7f0] to-[#e8f5e8] p-5 space-y-3">
+                <div className="flex items-center gap-2 font-heading font-semibold text-sm text-[#2d6a2d]">
+                  <Lightbulb className="w-4 h-4" />
+                  Negotiation Playbook
+                </div>
+                <ul className="space-y-2">
+                  {[
+                    "Always anchor with a number first — let them react.",
+                    'Use market data: "Glassdoor shows $X for this role."',
+                    "Mention specific skills or coursework that add value.",
+                    "Be silent after making your ask — don't fill the pause.",
+                    "Express enthusiasm for the role before pushing on pay.",
+                  ].map((tip) => (
+                    <li key={tip} className="flex gap-2 text-xs text-muted-foreground">
+                      <span className="gradient-brand-text font-bold shrink-0">›</span>
+                      {tip}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+
+              {/* Session history */}
+              {sessionScore.length > 0 && (
+                <div className="rounded-2xl border border-[#D0E8D0] bg-white p-5 card-soft space-y-3">
+                  <h3 className="font-heading font-semibold text-sm">
+                    Session Progress
+                  </h3>
+                  <div className="flex gap-1.5 flex-wrap">
+                    {sessionScore.map((s, i) => (
+                      <div
+                        key={i}
+                        className={`w-8 h-8 rounded-xl flex items-center justify-center text-xs font-bold text-currency text-white shadow-sm ${
+                          s >= 8
+                            ? "bg-gradient-to-br from-emerald-400 to-[#2ECC71]"
+                            : s >= 5
+                            ? "gradient-brand"
+                            : "bg-gradient-to-br from-[#5aaa5a] to-rose-400"
+                        }`}
+                      >
+                        {s}
+                      </div>
+                    ))}
+                  </div>
+                  <p className="text-[10px] text-muted-foreground">
+                    {sessionScore.length} exchange
+                    {sessionScore.length !== 1 ? "s" : ""} this session
+                  </p>
+                </div>
+              )}
+            </div>
           </div>
-        </div>
         </div>
       )}
 
@@ -922,7 +1366,7 @@ function NegotiateApp() {
             </div>
 
             {/* Messages */}
-            <div className="flex-1 overflow-y-auto p-5 space-y-4 bg-gradient-to-b from-[#f5faf5] to-white">
+            <div className="flex-1 overflow-y-auto p-5 space-y-4 bg-gradient-to-b from-[#f5faf5] to-white min-h-80 max-h-[480px]">
               {budgetMessages.map((msg) => (
                 <ChatBubble key={msg.id} msg={msg} />
               ))}
@@ -965,10 +1409,10 @@ function NegotiateApp() {
               </div>
               <div className="space-y-2.5">
                 {[
-                  { label: "Monthly Income",    value: profile.monthlyIncome,     subtext: undefined, negative: false },
-                  { label: "Independence Fund", value: profile.otherCash,         subtext: "Your safety net for total independence.", negative: false },
-                  { label: "Student Loans",     value: profile.studentLoanBalance, subtext: undefined, negative: true },
-                  { label: "Credit Card Debt",  value: profile.creditCardDebt,    subtext: undefined, negative: true },
+                  { label: "Monthly Income",    value: profile.monthlyIncome,      subtext: undefined,                                           negative: false },
+                  { label: "Independence Fund", value: profile.otherCash,          subtext: "Your safety net for total independence.",           negative: false },
+                  { label: "Student Loans",     value: profile.studentLoanBalance, subtext: undefined,                                           negative: true  },
+                  { label: "Credit Card Debt",  value: profile.creditCardDebt,     subtext: undefined,                                           negative: true  },
                 ].map(({ label, value, negative, subtext }) => (
                   <div key={label} className="flex items-start justify-between gap-2">
                     <div>
@@ -1003,9 +1447,7 @@ function NegotiateApp() {
                   {transactionSummary.slice(0, 6).map((c) => (
                     <li key={c.category} className="space-y-1">
                       <div className="flex items-center justify-between">
-                        <span className="text-xs text-foreground">
-                          {c.label}
-                        </span>
+                        <span className="text-xs text-foreground">{c.label}</span>
                         <span className="text-xs font-semibold font-mono text-[#2d6a2d]">
                           ${c.total.toFixed(2)}
                         </span>
@@ -1073,11 +1515,17 @@ export default function NegotiatePage() {
             </Button>
           </Link>
           <Separator orientation="vertical" className="h-5 bg-[#D0E8D0]" />
-          <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-xl gradient-brand flex items-center justify-center shadow-md">
-              <Bot className="w-4 h-4 text-white" />
-            </div>
-            <span className="font-heading font-bold tracking-tight">
+          {/* Logo + title */}
+          <div className="flex items-center gap-3">
+            <Image
+              src="/logo.png"
+              alt="Bloom"
+              width={44}
+              height={44}
+              className="rounded-xl shadow-md object-contain"
+              priority
+            />
+            <span className="font-heading font-bold tracking-tight text-[#1e551e]">
               &ldquo;Worth It&rdquo; AI Coach
             </span>
           </div>
@@ -1093,9 +1541,7 @@ export default function NegotiatePage() {
             <Lock className="w-7 h-7 text-white" />
           </div>
           <div className="space-y-2">
-            <h2 className="font-heading text-2xl font-bold">
-              Sign in to practice
-            </h2>
+            <h2 className="font-heading text-2xl font-bold">Sign in to practice</h2>
             <p className="text-muted-foreground max-w-sm text-sm leading-relaxed">
               Create a free account to start your negotiation session and track
               your confidence scores over time.
