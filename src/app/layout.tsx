@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { Syne, Plus_Jakarta_Sans, JetBrains_Mono } from "next/font/google";
 import { ClerkProvider } from "@clerk/nextjs";
+import { ProfileProvider } from "@/context/ProfileContext";
+import { PlaidProvider } from "@/context/PlaidContext";
 import "./globals.css";
 
 const syne = Syne({
@@ -41,7 +43,11 @@ export default function RootLayout({
         <body
           className={`${syne.variable} ${jakarta.variable} ${jetbrainsMono.variable} antialiased`}
         >
-          {children}
+          <ProfileProvider>
+            <PlaidProvider>
+              {children}
+            </PlaidProvider>
+          </ProfileProvider>
         </body>
       </html>
     </ClerkProvider>

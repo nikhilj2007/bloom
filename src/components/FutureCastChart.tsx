@@ -31,6 +31,8 @@ interface FutureCastChartProps {
   isConnected: boolean;
   /** Compact mode: single-column controls, shorter chart, used in right panel */
   compact?: boolean;
+  /** Override the default starting monthly contribution (default: 150) */
+  initialMonthlyContribution?: number;
 }
 
 // ─── Custom Tooltip ───────────────────────────────────────────────────────────
@@ -39,9 +41,11 @@ function CustomTooltip({ active, payload, label }: TooltipProps<number, string>)
   if (!active || !payload?.length) return null;
   const value = payload[0].value as number;
   return (
-    <div className="rounded-xl border border-[#E8E0F5] bg-white/95 px-4 py-3 shadow-xl backdrop-blur-sm">
-      <p className="text-[10px] font-medium text-muted-foreground mb-1 uppercase tracking-wide">Year {label}</p>
-      <p className="text-currency text-base font-bold text-[#9b6de0]">
+    <div className="rounded-xl border border-[#D0E8D0] bg-white/95 px-4 py-3 shadow-xl backdrop-blur-sm">
+      <p className="text-[10px] font-medium text-muted-foreground mb-1 uppercase tracking-wide">
+        Year {label}
+      </p>
+      <p className="text-currency text-base font-bold text-[#2d6a2d]">
         {formatCurrency(value)}
       </p>
     </div>
@@ -58,10 +62,15 @@ const MILESTONES = [10, 20, 30, 40] as const;
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
-export function FutureCastChart({ netWorth, isConnected, compact = false }: FutureCastChartProps) {
+export function FutureCastChart({
+  netWorth,
+  isConnected,
+  compact = false,
+  initialMonthlyContribution = 150,
+}: FutureCastChartProps) {
   const principal = netWorth > 0 ? netWorth : 1_000;
 
-  const [monthlyContribution, setMonthlyContribution] = useState(150);
+  const [monthlyContribution, setMonthlyContribution] = useState(initialMonthlyContribution);
   const [career, setCareer] = useState<CareerPath>("starting_out");
   const [strategy, setStrategy] = useState<InvestmentStrategy>("moderate");
   const [expanded, setExpanded] = useState(false);
@@ -82,14 +91,14 @@ export function FutureCastChart({ netWorth, isConnected, compact = false }: Futu
   return (
     <section
       id="future-cast"
-      className={`rounded-2xl overflow-hidden border border-[#E8E0F5] card-soft bg-white ${compact ? "" : "mt-0"}`}
+      className={`rounded-2xl overflow-hidden border border-[#D0E8D0] card-soft bg-white ${compact ? "" : "mt-0"}`}
     >
       {/* ── Header ──────────────────────────────────────────────────────── */}
-      <div className="bg-gradient-to-br from-[#F3EDFF] to-[#FFF0E8] px-5 pt-5 pb-4 border-b border-[#E8E0F5]">
+      <div className="bg-gradient-to-br from-[#f0f7f0] to-[#e8f5e8] px-5 pt-5 pb-4 border-b border-[#D0E8D0]">
         <div className="flex items-start justify-between gap-2">
           <div className="flex items-center gap-3">
-            <div className="p-2 rounded-xl bg-white/70 shadow-sm">
-              <TrendingUp className="w-4 h-4 text-[#9b6de0]" />
+            <div className="p-2 rounded-xl bg-white/80 shadow-sm">
+              <TrendingUp className="w-4 h-4 text-[#3E863E]" />
             </div>
             <div>
               <h2 className="font-heading font-bold text-sm">Future-Cast Engine</h2>
@@ -102,22 +111,24 @@ export function FutureCastChart({ netWorth, isConnected, compact = false }: Futu
           </div>
           <Badge
             variant="outline"
-            className="shrink-0 text-[#9b6de0] border-[#D4B8F8] bg-[#f3edff] text-[10px] font-semibold"
+            className="shrink-0 text-[#2d6a2d] border-[#A8D4A8] bg-[#f0f7f0] text-[10px] font-semibold"
           >
             40-yr
           </Badge>
         </div>
 
-        {/* ── Milestone breakdown (always visible) ─────────────────────── */}
+        {/* ── Milestone breakdown ─────────────────────────────────────────── */}
         <div className="grid grid-cols-3 gap-2 mt-4">
           {[
             { label: "10 Yrs", value: at10 },
             { label: "20 Yrs", value: at20 },
             { label: "30 Yrs", value: at30 },
           ].map(({ label, value }) => (
-            <div key={label} className="rounded-xl bg-white/70 px-2.5 py-2 text-center">
-              <p className="text-[9px] uppercase tracking-wide text-muted-foreground font-semibold">{label}</p>
-              <p className="text-currency text-xs font-bold text-[#9b6de0] mt-0.5 tabular-nums">
+            <div key={label} className="rounded-xl bg-white/80 px-2.5 py-2 text-center">
+              <p className="text-[9px] uppercase tracking-wide text-muted-foreground font-semibold">
+                {label}
+              </p>
+              <p className="text-currency text-xs font-bold text-[#2d6a2d] mt-0.5 tabular-nums">
                 {formatCurrency(value)}
               </p>
             </div>
@@ -125,15 +136,19 @@ export function FutureCastChart({ netWorth, isConnected, compact = false }: Futu
         </div>
 
         {/* 40-year total + multiplier */}
-        <div className="mt-3 flex items-center justify-between rounded-xl bg-white/80 border border-[#D4B8F8] px-3.5 py-2.5">
+        <div className="mt-3 flex items-center justify-between rounded-xl bg-white/90 border border-[#A8D4A8] px-3.5 py-2.5">
           <div>
-            <p className="text-[9px] uppercase tracking-wide text-muted-foreground font-semibold">40-Year Value</p>
-            <p className="text-currency text-lg font-bold text-[#9b6de0] tabular-nums leading-tight">
+            <p className="text-[9px] uppercase tracking-wide text-muted-foreground font-semibold">
+              40-Year Value
+            </p>
+            <p className="text-currency text-lg font-bold text-[#2d6a2d] tabular-nums leading-tight">
               {formatCurrency(finalWealth)}
             </p>
           </div>
           <div className="text-right">
-            <p className="text-[9px] uppercase tracking-wide text-muted-foreground font-semibold">Multiplier</p>
+            <p className="text-[9px] uppercase tracking-wide text-muted-foreground font-semibold">
+              Multiplier
+            </p>
             <p className="text-currency text-lg font-bold gradient-brand-text tabular-nums leading-tight">
               {multiplier}×
             </p>
@@ -144,7 +159,7 @@ export function FutureCastChart({ netWorth, isConnected, compact = false }: Futu
       {/* ── Expand toggle ────────────────────────────────────────────────── */}
       <button
         onClick={() => setExpanded((v) => !v)}
-        className="w-full flex items-center justify-center gap-2 py-3 px-5 text-xs font-semibold text-[#9b6de0] hover:bg-[#F9F5FF] transition-colors border-b border-[#E8E0F5]"
+        className="w-full flex items-center justify-center gap-2 py-3 px-5 text-xs font-semibold text-[#2d6a2d] hover:bg-[#f0f7f0] transition-colors border-b border-[#D0E8D0]"
       >
         <Sparkles className="w-3.5 h-3.5" />
         {expanded ? "Hide details" : "Slide to see the future"}
@@ -155,14 +170,18 @@ export function FutureCastChart({ netWorth, isConnected, compact = false }: Futu
       {expanded && (
         <div className="animate-in slide-in-from-top-2 duration-300">
           {/* Controls */}
-          <div className={`grid gap-5 p-5 bg-[#FDFAFF] border-b border-[#E8E0F5] ${compact ? "grid-cols-1" : "grid-cols-1 sm:grid-cols-3"}`}>
+          <div
+            className={`grid gap-5 p-5 bg-[#f5faf5] border-b border-[#D0E8D0] ${
+              compact ? "grid-cols-1" : "grid-cols-1 sm:grid-cols-3"
+            }`}
+          >
             {/* Monthly contribution slider */}
             <div className="space-y-3">
               <div className="flex items-center justify-between">
                 <Label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
                   Monthly Contribution
                 </Label>
-                <span className="text-currency text-xs font-bold text-[#9b6de0] tabular-nums">
+                <span className="text-currency text-xs font-bold text-[#2d6a2d] tabular-nums">
                   {formatCurrency(monthlyContribution)}
                 </span>
               </div>
@@ -186,7 +205,7 @@ export function FutureCastChart({ netWorth, isConnected, compact = false }: Futu
                 Career Path
               </Label>
               <Select value={career} onValueChange={(v) => setCareer(v as CareerPath)}>
-                <SelectTrigger className="border-[#D4B8F8] focus:ring-[#B792F0] text-xs">
+                <SelectTrigger className="border-[#A8D4A8] focus:ring-[#3E863E] text-xs">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -216,7 +235,7 @@ export function FutureCastChart({ netWorth, isConnected, compact = false }: Futu
                 Investment Strategy
               </Label>
               <Select value={strategy} onValueChange={(v) => setStrategy(v as InvestmentStrategy)}>
-                <SelectTrigger className="border-[#D4B8F8] focus:ring-[#B792F0] text-xs">
+                <SelectTrigger className="border-[#A8D4A8] focus:ring-[#3E863E] text-xs">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -239,14 +258,14 @@ export function FutureCastChart({ netWorth, isConnected, compact = false }: Futu
               <AreaChart data={data} margin={{ top: 10, right: 8, left: 8, bottom: 0 }}>
                 <defs>
                   <linearGradient id="fcGradient" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="#B792F0" stopOpacity={0.3} />
-                    <stop offset="100%" stopColor="#FFB899" stopOpacity={0.02} />
+                    <stop offset="0%"   stopColor="#3E863E" stopOpacity={0.28} />
+                    <stop offset="100%" stopColor="#4C994C" stopOpacity={0.02} />
                   </linearGradient>
                 </defs>
 
                 <CartesianGrid
                   strokeDasharray="3 3"
-                  stroke="#F0EAF8"
+                  stroke="#E0F0E0"
                   vertical={false}
                 />
 
@@ -269,14 +288,14 @@ export function FutureCastChart({ netWorth, isConnected, compact = false }: Futu
 
                 <Tooltip
                   content={<CustomTooltip />}
-                  cursor={{ stroke: "#B792F0", strokeWidth: 1.5, strokeDasharray: "4 2" }}
+                  cursor={{ stroke: "#3E863E", strokeWidth: 1.5, strokeDasharray: "4 2" }}
                 />
 
                 {MILESTONES.map((yr) => (
                   <ReferenceLine
                     key={yr}
                     x={yr}
-                    stroke="#D4B8F8"
+                    stroke="#A8D4A8"
                     strokeOpacity={0.5}
                     strokeDasharray="4 4"
                   />
@@ -285,16 +304,11 @@ export function FutureCastChart({ netWorth, isConnected, compact = false }: Futu
                 <Area
                   type="monotone"
                   dataKey="wealth"
-                  stroke="#B792F0"
+                  stroke="#3E863E"
                   strokeWidth={2.5}
                   fill="url(#fcGradient)"
                   dot={false}
-                  activeDot={{
-                    r: 5,
-                    fill: "#B792F0",
-                    stroke: "white",
-                    strokeWidth: 2,
-                  }}
+                  activeDot={{ r: 5, fill: "#3E863E", stroke: "white", strokeWidth: 2 }}
                   animationDuration={600}
                   animationEasing="ease-out"
                 />
@@ -302,14 +316,14 @@ export function FutureCastChart({ netWorth, isConnected, compact = false }: Futu
             </ResponsiveContainer>
           </div>
 
-          <Separator className="bg-[#F0EAF8]" />
+          <Separator className="bg-[#E0F0E0]" />
 
           {/* Footer insight */}
-          <div className="px-5 py-3.5 bg-[#FDFAFF]">
+          <div className="px-5 py-3.5 bg-[#f5faf5]">
             <p className="text-[10px] text-muted-foreground leading-relaxed">
               <span className="font-semibold text-foreground">How this works: </span>
               Starting from{" "}
-              <span className="text-currency font-semibold text-[#9b6de0]">
+              <span className="text-currency font-semibold text-[#2d6a2d]">
                 {formatCurrency(principal)}
               </span>
               , contributing{" "}

@@ -4,59 +4,59 @@
 
 @layer base {
   :root {
-    /* ── "The New Wealth" Palette ─────────────────────────────── */
-    --background: 0 33% 99%;          /* #FCFAFA cream */
-    --foreground: 224 22% 10%;
+    /* ── Fidelity Green & White Palette ──────────────────────────── */
+    --background: 0 0% 100%;           /* Pure White */
+    --foreground: 215 25% 13%;         /* Dark Slate */
     --card: 0 0% 100%;
-    --card-foreground: 224 22% 10%;
+    --card-foreground: 215 25% 13%;
     --popover: 0 0% 100%;
-    --popover-foreground: 224 22% 10%;
-    --primary: 271 72% 68%;           /* Electric Lavender */
+    --popover-foreground: 215 25% 13%;
+    --primary: 120 37% 38%;            /* Fidelity Green #3E863E */
     --primary-foreground: 0 0% 100%;
-    --secondary: 297 38% 90%;         /* Soft Orchid tint */
-    --secondary-foreground: 271 28% 28%;
-    --muted: 210 22% 96%;
-    --muted-foreground: 215 14% 52%;
-    --accent: 22 90% 88%;             /* Peach */
-    --accent-foreground: 20 40% 26%;
+    --secondary: 120 18% 94%;          /* Soft green tint */
+    --secondary-foreground: 120 28% 18%;
+    --muted: 210 20% 96%;
+    --muted-foreground: 215 14% 50%;
+    --accent: 120 18% 94%;             /* Light green */
+    --accent-foreground: 120 38% 18%;
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
-    --border: 220 18% 91%;
-    --input: 220 18% 91%;
-    --ring: 271 72% 68%;
-    --radius: 1rem;
+    --border: 120 8% 88%;
+    --input: 120 8% 88%;
+    --ring: 120 37% 38%;
+    --radius: 0.75rem;
     /* Charts */
-    --chart-1: 271 72% 68%;
-    --chart-2: 148 52% 46%;
-    --chart-3: 297 45% 68%;
-    --chart-4: 22 90% 72%;
-    --chart-5: 0 84% 60%;
+    --chart-1: 120 37% 38%;            /* Primary Green */
+    --chart-2: 148 52% 46%;            /* Emerald */
+    --chart-3: 120 50% 54%;            /* Mid Green */
+    --chart-4: 160 45% 52%;            /* Teal Green */
+    --chart-5: 0 84% 60%;              /* Red (errors/loss) */
   }
 
   .dark {
-    --background: 222 20% 6%;         /* Midnight Navy */
-    --foreground: 210 38% 95%;
-    --card: 222 20% 9%;
-    --card-foreground: 210 38% 95%;
-    --popover: 222 20% 9%;
-    --popover-foreground: 210 38% 95%;
-    --primary: 271 80% 74%;
+    --background: 215 25% 7%;
+    --foreground: 120 8% 94%;
+    --card: 215 25% 10%;
+    --card-foreground: 120 8% 94%;
+    --popover: 215 25% 10%;
+    --popover-foreground: 120 8% 94%;
+    --primary: 120 42% 48%;            /* Brighter green in dark */
     --primary-foreground: 0 0% 100%;
-    --secondary: 217 28% 18%;
-    --secondary-foreground: 210 38% 95%;
-    --muted: 217 28% 16%;
-    --muted-foreground: 215 18% 60%;
-    --accent: 162 78% 58%;            /* Neon Mint in dark */
-    --accent-foreground: 162 40% 10%;
+    --secondary: 215 20% 18%;
+    --secondary-foreground: 120 8% 90%;
+    --muted: 215 20% 15%;
+    --muted-foreground: 215 14% 58%;
+    --accent: 120 36% 22%;
+    --accent-foreground: 120 8% 92%;
     --destructive: 0 62% 30%;
     --destructive-foreground: 0 0% 100%;
-    --border: 217 28% 18%;
-    --input: 217 28% 18%;
-    --ring: 271 80% 74%;
-    --chart-1: 271 80% 74%;
-    --chart-2: 162 78% 58%;
-    --chart-3: 297 50% 72%;
-    --chart-4: 22 90% 76%;
+    --border: 215 20% 18%;
+    --input: 215 20% 18%;
+    --ring: 120 42% 48%;
+    --chart-1: 120 42% 48%;
+    --chart-2: 148 52% 56%;
+    --chart-3: 120 50% 60%;
+    --chart-4: 160 45% 58%;
     --chart-5: 0 84% 60%;
   }
 }
@@ -74,7 +74,6 @@
     font-family: var(--font-syne), system-ui, sans-serif;
     letter-spacing: -0.025em;
   }
-  /* Currency & numbers use JetBrains Mono */
   .font-mono, [class*="tabular-nums"] {
     font-family: var(--font-mono), ui-monospace, monospace;
   }
@@ -85,16 +84,16 @@
   .glass {
     backdrop-filter: blur(20px) saturate(180%);
     -webkit-backdrop-filter: blur(20px) saturate(180%);
-    background-color: rgba(255, 255, 255, 0.72);
-    border: 1px solid rgba(255, 255, 255, 0.55);
+    background-color: rgba(255, 255, 255, 0.82);
+    border: 1px solid rgba(255, 255, 255, 0.60);
   }
   .glass-dark {
     backdrop-filter: blur(20px) saturate(180%);
     -webkit-backdrop-filter: blur(20px) saturate(180%);
-    background-color: rgba(11, 14, 20, 0.75);
-    border: 1px solid rgba(255, 255, 255, 0.09);
+    background-color: rgba(10, 14, 18, 0.78);
+    border: 1px solid rgba(255, 255, 255, 0.08);
   }
-  /* Soft squircle shadows */
+  /* Soft shadows */
   .card-soft {
     box-shadow:
       0 2px 4px rgba(0, 0, 0, 0.04),
@@ -103,34 +102,25 @@
   .card-glow {
     box-shadow:
       0 2px 4px rgba(0, 0, 0, 0.04),
-      0 12px 40px -10px rgba(183, 146, 240, 0.25);
+      0 12px 40px -10px rgba(62, 134, 62, 0.20);
   }
   .card-glow-green {
     box-shadow:
       0 2px 4px rgba(0, 0, 0, 0.04),
-      0 12px 40px -10px rgba(46, 196, 113, 0.25);
+      0 12px 40px -10px rgba(46, 196, 113, 0.22);
   }
-  /* Brand gradients */
+  /* Brand gradients — Fidelity Green */
   .gradient-brand {
-    background: linear-gradient(135deg, #B792F0 0%, #D98BCC 55%, #FFB899 100%);
+    background: linear-gradient(135deg, #3E863E 0%, #4C994C 55%, #5aaa5a 100%);
   }
   .gradient-brand-text {
-    background: linear-gradient(135deg, #B792F0 0%, #D98BCC 55%, #FFB899 100%);
+    background: linear-gradient(135deg, #2d6a2d 0%, #3E863E 55%, #4C994C 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
   }
-  .gradient-lavender {
-    background: linear-gradient(135deg, #c4a8f5 0%, #b792f0 100%);
-  }
-  .gradient-orchid {
-    background: linear-gradient(135deg, #e0a5d8 0%, #d98bcc 100%);
-  }
-  .gradient-peach {
-    background: linear-gradient(135deg, #ffcfb3 0%, #ffb899 100%);
-  }
   .gradient-fidelity {
-    background: linear-gradient(135deg, #2ecc71 0%, #27ae60 100%);
+    background: linear-gradient(135deg, #3E863E 0%, #2d6a2d 100%);
   }
   /* Monospace numbers */
   .text-currency {

@@ -4,9 +4,10 @@ import { useCallback, useEffect, useState } from "react";
 import { usePlaidLink, PlaidLinkOptions, PlaidLinkOnSuccess } from "react-plaid-link";
 import { Button } from "@/components/ui/button";
 import { Loader2, Link2 } from "lucide-react";
+import type { CategorySummary } from "@/types";
 
 interface PlaidLinkButtonProps {
-  onSuccess: (accessToken: string) => void;
+  onSuccess: (accessToken: string, summary: CategorySummary[]) => void;
 }
 
 export function PlaidLinkButton({ onSuccess }: PlaidLinkButtonProps) {
@@ -36,14 +37,27 @@ export function PlaidLinkButton({ onSuccess }: PlaidLinkButtonProps) {
     async (publicToken) => {
       try {
         setLoading(true);
-        const res = await fetch("/api/get_access_token", {
+
+        // 1. Exchange public_token for access_token
+        const tokenRes = await fetch("/api/get_access_token", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ public_token: publicToken }),
         });
-        const data = await res.json();
-        if (data.error) throw new Error(data.error);
-        onSuccess(data.access_token);
+        const tokenData = await tokenRes.json();
+        if (tokenData.error) throw new Error(tokenData.error);
+        const accessToken: string = tokenData.access_token;
+
+        // 2. Fetch aggregated transaction summary via transactionsSync
+        const txRes = await fetch("/api/plaid/transactions", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ access_token: accessToken }),
+        });
+        const txData = await txRes.json();
+        const summary: CategorySummary[] = txData.summary ?? [];
+
+        onSuccess(accessToken, summary);
       } catch (err) {
         setError("Failed to connect account. Please try again.");
         console.error(err);
@@ -72,7 +86,7 @@ export function PlaidLinkButton({ onSuccess }: PlaidLinkButtonProps) {
   return (
     <Button
       size="lg"
-      className="gap-2 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white shadow-lg shadow-violet-500/25"
+      className="gap-2 bg-[#3E863E] hover:bg-[#2d6a2d] text-white shadow-lg shadow-[#3E863E]/25 transition-colors"
       onClick={() => open()}
       disabled={!ready || loading || !linkToken}
     >

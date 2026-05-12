@@ -24,12 +24,20 @@ export interface PlaidTransaction {
   payment_channel: string;
 }
 
+export type CareerPath =
+  | "starting_out"
+  | "tech_engineering"
+  | "business_finance"
+  | "nursing_healthcare";
+
+export type InvestmentStrategy = "conservative" | "moderate" | "aggressive";
+
 /** Financial snapshot for a first-year college student */
 export interface CollegeProfile {
   // ── Income / Assets ──────────────────────────────────────
-  monthlyIncome: number;       // part-time job, work-study, etc.
-  financialAid: number;        // annual grants / scholarships (not loans)
-  otherCash: number;           // Venmo, cash, other savings accounts
+  monthlyIncome: number;        // part-time job, work-study, etc.
+  financialAid: number;         // annual grants / scholarships (not loans)
+  otherCash: number;            // liquid savings, Venmo, cash etc.
 
   // ── Expenses (for context / budgeting only) ───────────────
   monthlyRent: number;
@@ -37,7 +45,10 @@ export interface CollegeProfile {
 
   // ── Liabilities ───────────────────────────────────────────
   studentLoanBalance: number;
-  creditCardDebt: number;      // manual CC balance (supplements Plaid data)
+  creditCardDebt: number;       // manual CC balance (supplements Plaid data)
+
+  // ── Career ───────────────────────────────────────────────
+  expectedCareer: CareerPath;
 }
 
 export const DEFAULT_COLLEGE_PROFILE: CollegeProfile = {
@@ -48,6 +59,7 @@ export const DEFAULT_COLLEGE_PROFILE: CollegeProfile = {
   monthlyTuition: 0,
   studentLoanBalance: 0,
   creditCardDebt: 0,
+  expectedCareer: "starting_out",
 };
 
 export interface NetWorthBreakdown {
@@ -72,9 +84,6 @@ export interface WealthDataPoint {
   wealth: number;
 }
 
-export type CareerPath = "starting_out" | "tech_engineering" | "business_finance";
-export type InvestmentStrategy = "conservative" | "moderate" | "aggressive";
-
 // ── Chat / Negotiation types ──────────────────────────────────────────────────
 
 export type MessageRole = "user" | "assistant";
@@ -92,4 +101,12 @@ export interface GeminiNegotiationResponse {
   reply: string;
   confidence_score: number;    // 1–10
   feedback: string[];          // 1–2 actionable tips
+}
+
+export interface CategorySummary {
+  category: string;            // e.g. "FOOD_AND_DRINK"
+  label: string;               // human-readable label
+  total: number;               // total spend in dollars
+  percentage: number;          // % of mock $1,200 monthly income
+  transactionCount: number;
 }
