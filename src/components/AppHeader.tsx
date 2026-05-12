@@ -15,19 +15,21 @@ import {
   Briefcase,
   TrendingUp,
   User,
+  BookOpen,
 } from "lucide-react";
 
 const NAV_LINKS = [
   { label: "Home",   href: "/"        },
+  { label: "Learn",  href: "/learn"   },
   { label: "Budget", href: "/budget"  },
   { label: "Grow",   href: "/grow"    },
 ];
 
 const DOCK_ITEMS = [
   { icon: HomeIcon,   label: "Home",    href: "/"        },
+  { icon: BookOpen,   label: "Learn",   href: "/learn"  },
   { icon: BarChart2,  label: "Budget",  href: "/budget"  },
   { icon: TrendingUp, label: "Grow",    href: "/grow"    },
-  { icon: Briefcase,  label: "Career",  href: "/"        },
   { icon: User,       label: "Profile", href: "/"        },
 ];
 

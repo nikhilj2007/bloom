@@ -36,3 +36,5 @@ yarn-error.log*
 .cursorignore
 llm_context.md
 .cursorrules
+# clerk configuration (can include secrets)
+/.clerk/
