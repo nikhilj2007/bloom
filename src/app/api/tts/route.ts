@@ -1,7 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 
-// Rachel voice — professional female voice by ElevenLabs
-const VOICE_ID = "pNInz6obbfDQGcgMyIGD";
+// Voice ID: configure via ELEVENLABS_VOICE_ID env var, or falls back to
+// ElevenLabs' built-in "Rachel" voice (21m00Tcm4TlvDq8ikWAM) which exists
+// on every account — avoids 404 voice_not_found errors.
+const VOICE_ID =
+  process.env.ELEVENLABS_VOICE_ID ?? "21m00Tcm4TlvDq8ikWAM";
 const ELEVENLABS_URL = `https://api.elevenlabs.io/v1/text-to-speech/${VOICE_ID}`;
 
 export async function POST(req: NextRequest) {
