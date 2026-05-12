@@ -32,7 +32,6 @@ const DOCK_ITEMS = [
   { icon: Gamepad2, label: "Arcade", href: "/arcade" },
   { icon: User, label: "Profile", href: "/" },
 ];
-];
 
 export function AppHeader() {
   const { isSignedIn } = useAuth();
