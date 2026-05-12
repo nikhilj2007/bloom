@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ExternalLink } from "lucide-react";
+import { ExternalLink, ChevronLeft } from "lucide-react";
 import * as Icons from "lucide-react";
 import { learnCategories } from "@/lib/learnContent";
 
@@ -7,6 +7,11 @@ export default function LearnHubPage() {
   return (
     <div className="min-h-screen bg-[#F9FAFB] pb-24 md:pb-10">
       <main className="max-w-4xl mx-auto px-4 sm:px-6 pt-8 space-y-8">
+        {/* Back Link */}
+        <Link href="/" className="inline-flex items-center gap-1.5 text-sm font-medium text-muted-foreground hover:text-[#2d6a2d] transition-colors">
+          <ChevronLeft className="w-4 h-4" /> Back to Dashboard
+        </Link>
+
         {/* Hero Section */}
         <section className="text-center py-6 space-y-4">
           <h1 className="font-heading text-4xl sm:text-5xl font-extrabold tracking-tight">

@@ -32,7 +32,7 @@ const DOCK_ITEMS = [
   { icon: Gamepad2, label: "Arcade", href: "/arcade" },
   { icon: User, label: "Profile", href: "/" },
 ];
-];
+
 
 export function AppHeader() {
   const { isSignedIn } = useAuth();
@@ -43,13 +43,16 @@ export function AppHeader() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-6">
         {/* Logo */}
         <Link href="/" className="flex items-center gap-2.5 shrink-0">
-          <Image
-            src="/logo.png"
-            alt="WorthWise Logo"
-            width={32}
-            height={32}
-            className="rounded-xl shadow-md"
-          />
+          <div className="w-10 h-10 rounded-xl overflow-hidden shrink-0 bg-white">
+            <Image
+              src="/logo.png"
+              alt="WorthWise Logo"
+              width={256}
+              height={256}
+              quality={100}
+              className="w-full h-full object-contain"
+            />
+          </div>
           <span className="font-heading font-bold text-lg tracking-tight">WorthWise</span>
         </Link>
 
@@ -62,8 +65,8 @@ export function AppHeader() {
                 key={label}
                 href={href}
                 className={`px-3.5 py-1.5 rounded-lg text-sm font-medium transition-all ${active
-                    ? "bg-[#F0F7F0] text-[#2d6a2d] font-semibold"
-                    : "text-muted-foreground hover:text-foreground hover:bg-[#F0F7F0]"
+                  ? "bg-[#F0F7F0] text-[#2d6a2d] font-semibold"
+                  : "text-muted-foreground hover:text-foreground hover:bg-[#F0F7F0]"
                   }`}
               >
                 {label}
@@ -73,8 +76,8 @@ export function AppHeader() {
           <Link
             href="/negotiate"
             className={`px-3.5 py-1.5 rounded-lg text-sm font-medium transition-all flex items-center gap-1.5 ${pathname === "/negotiate"
-                ? "bg-[#F0F7F0] text-[#2d6a2d] font-semibold"
-                : "text-muted-foreground hover:text-foreground hover:bg-[#F0F7F0]"
+              ? "bg-[#F0F7F0] text-[#2d6a2d] font-semibold"
+              : "text-muted-foreground hover:text-foreground hover:bg-[#F0F7F0]"
               }`}
           >
             <Bot className="w-3.5 h-3.5" /> AI Coach
@@ -82,8 +85,8 @@ export function AppHeader() {
           <Link
             href="/arcade"
             className={`px-3.5 py-1.5 rounded-lg text-sm font-medium transition-all flex items-center gap-1.5 ${pathname === "/arcade"
-                ? "bg-[#F0F7F0] text-[#2d6a2d] font-semibold"
-                : "text-muted-foreground hover:text-foreground hover:bg-[#F0F7F0]"
+              ? "bg-[#F0F7F0] text-[#2d6a2d] font-semibold"
+              : "text-muted-foreground hover:text-foreground hover:bg-[#F0F7F0]"
               }`}
           >
             <Gamepad2 className="w-3.5 h-3.5" /> Arcade

@@ -3,6 +3,7 @@
 import { SignUpButton, SignInButton } from "@clerk/nextjs";
 import { Button } from "@/components/ui/button";
 import { ArrowRight, Bot, BarChart2, Link2, Sparkles } from "lucide-react";
+import Image from "next/image";
 
 // ─── Feature cards ────────────────────────────────────────────────────────────
 
@@ -45,11 +46,18 @@ export function LandingPage() {
       {/* ── Minimal nav ────────────────────────────────────────────── */}
       <header className="border-b border-[#D0E8D0] bg-white/90 backdrop-blur-xl sticky top-0 z-40">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="w-7 h-7 rounded-lg gradient-brand flex items-center justify-center shadow-sm">
-              <Sparkles className="w-3.5 h-3.5 text-white" />
+          <div className="flex items-center gap-2.5">
+            <div className="w-10 h-10 rounded-xl overflow-hidden shrink-0 bg-white">
+              <Image
+                src="/logo.png"
+                alt="WorthWise Logo"
+                width={256}
+                height={256}
+                quality={100}
+                className="w-full h-full object-contain"
+              />
             </div>
-            <span className="font-heading font-bold tracking-tight text-sm">Glow</span>
+            <span className="font-heading font-bold text-lg tracking-tight">WorthWise</span>
           </div>
           <SignInButton mode="modal">
             <Button

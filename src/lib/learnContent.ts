@@ -78,7 +78,7 @@ A great starting point is the 50/30/20 rule: 50% for needs (rent, groceries), 30
           "Tracking your spending is the first step to financial awareness."
         ],
         actionStep: "Look at your bank transactions from the last 7 days. Categorize them into Needs, Wants, and Savings. Does anything surprise you?",
-        youtubeUrl: "https://www.youtube.com/embed/sVKQn2I4pAA",
+        youtubeUrl: "https://www.youtube.com/embed/b9iwISYBI-g",
         activity: {
           id: "budget-quiz-1",
           type: "multiple-choice",
