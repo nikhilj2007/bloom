@@ -25,6 +25,6 @@ export function getSupabaseClient(): SupabaseClient {
 // Backwards-compat named export used by the rest of the codebase.
 export const supabase = new Proxy({} as SupabaseClient, {
   get(_target, prop) {
-    return (getSupabaseClient() as Record<string | symbol, unknown>)[prop];
+    return (getSupabaseClient() as unknown as Record<string | symbol, unknown>)[prop];
   },
 });

@@ -103,6 +103,13 @@ export interface GeminiNegotiationResponse {
   feedback: string[];          // 1–2 actionable tips
 }
 
+export interface ManualCashEntry {
+  id: string;
+  label: string;
+  amount: number;
+  category?: string;
+}
+
 export interface CategorySummary {
   category: string;            // e.g. "FOOD_AND_DRINK"
   label: string;               // human-readable label

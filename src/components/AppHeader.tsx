@@ -93,7 +93,7 @@ export function AppHeader() {
           )}
 
           {isSignedIn ? (
-            <UserButton afterSignOutUrl="/" />
+            <UserButton />
           ) : (
             <SignInButton mode="modal">
               <Button
