@@ -33,7 +33,6 @@ const DOCK_ITEMS = [
   { icon: User, label: "Profile", href: "/" },
 ];
 
-
 export function AppHeader() {
   const { isSignedIn } = useAuth();
   const pathname = usePathname();
